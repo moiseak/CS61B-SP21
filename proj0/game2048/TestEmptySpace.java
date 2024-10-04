@@ -14,7 +14,7 @@ public class TestEmptySpace {
     static Board b;
 
     @Test
-    /** Note that this isn't a possible board state. */
+    /* Note that this isn't a possible board state. */
     public void testCompletelyEmpty() {
         int[][] rawVals = new int[][] {
                 {0, 0, 0, 0},
