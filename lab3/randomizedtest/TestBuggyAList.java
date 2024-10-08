@@ -44,7 +44,6 @@ public class TestBuggyAList {
                     int remove2 = blist.removeLast();
                     assertEquals(remove1, remove2);
                 }
-
             } else if (operationNumber == 2) {
                 int size = L.size();
                 if (size > 0) {
