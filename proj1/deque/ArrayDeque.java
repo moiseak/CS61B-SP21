@@ -8,32 +8,8 @@ public class ArrayDeque <T>{
     public ArrayDeque() {
         array = (T[]) new Object[8];
         size = 0;
-        nextlast = 0;
+        nextlast = 1;
         nextfirst = 0;
-    }
-
-    public T[] resize(int newSize) {
-        T[] newArray = (T[]) new Object[newSize];
-        System.arraycopy(array, 0, newArray, 0, size);
-        return newArray;
-    }
-
-    public void addFirst(T item) {
-        if (size == array.length) {
-            array = resize(size * 2);
-        }
-        nextfirst = (nextfirst - 1 + array.length) % array.length;
-        array[nextfirst] = item;
-        size++;
-    }
-
-    public void addLast(T item) {
-        if (size == array.length) {
-            array = resize(size * 2);
-        }
-        nextlast = (nextlast + 1) % array.length;
-        array[nextlast] = item;
-        size++;
     }
 
     public boolean isEmpty() {
@@ -44,29 +20,65 @@ public class ArrayDeque <T>{
         return size;
     }
 
-    public void printDeque() {
+    public T[] resize(int newSize) {
+        T[] newArray = (T[]) new Object[newSize];
         for (int i = 0; i < size; i++) {
-            System.out.print(array[i] + " ");
+            newArray[i] = get(i);
         }
-        System.out.println();
+        nextfirst = newArray.length - 1;
+        nextlast = size;
+        return newArray;
+    }
+
+    public void addFirst(T item) {
+        if (size == array.length) {
+            array = resize(size * 2);
+        }
+        array[nextfirst] = item;
+        nextfirst = (nextfirst - 1 + array.length) % array.length;
+        size++;
+    }
+
+    public void addLast(T item) {
+        if (size == array.length) {
+            array = resize(size * 2);
+        }
+        array[nextlast] = item;
+        nextlast = (nextlast + 1) % array.length;
+        size++;
     }
 
     public T removeFirst() {
-        if (size == 0) {
+        if (isEmpty()) {
             return null;
         }
-        T item = array[0];
         size--;
         nextfirst = (nextfirst + 1) % array.length;
-        return array[nextfirst];
+        T temp = array[nextfirst];
+        array[nextfirst] = null;
+        return temp;
     }
 
     public T removeLast() {
-        if (size == 0) {
+        if (isEmpty()) {
             return null;
         }
         size--;
         nextlast = (nextlast - 1 + array.length) % array.length;
-        return array[nextlast];
+        T temp = array[nextlast];
+        array[nextlast] = null;
+        return temp;
+    }
+
+    public T get(int index) {
+        int in = (nextfirst + 1 + index) % array.length;
+        return array[in];
+    }
+
+    public void printDeque() {
+        for (int i = 0; i < size(); i++) {
+            System.out.print(get(i) + " ");
+        }
+        System.out.println();
     }
 }
