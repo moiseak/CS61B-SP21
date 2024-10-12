@@ -21,7 +21,7 @@ public class ArrayDeque<T> implements Deque<T>, Iterable<T> {
     private class ArrayDequeIterator implements Iterator<T> {
         private int current;
 
-        public ArrayDequeIterator() {
+        ArrayDequeIterator() {
             current = 0;
         }
 
@@ -46,12 +46,12 @@ public class ArrayDeque<T> implements Deque<T>, Iterable<T> {
     @Override
     public boolean equals(Object o) {
         if (o instanceof Deque) {
-            ArrayDeque<T> other = (ArrayDeque<T>) o;
+            Deque<T> other = (Deque<T>) o;
             if (this.size() != other.size()) {
                 return false;
             }
             for (int i = 0; i < size(); i++) {
-                if (this.get(i) != other.get(i)) {
+                if (this.get(i).equals(other.get(i))) {
                     return false;
                 }
             }

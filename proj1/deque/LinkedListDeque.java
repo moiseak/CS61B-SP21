@@ -32,7 +32,7 @@ public class LinkedListDeque<T> implements Deque<T>, Iterable<T> {
     private class LinkedListIterator implements Iterator<T> {
         private ListNode<T> current;
 
-        public LinkedListIterator() {
+        LinkedListIterator() {
             current = sentinel;
         }
 
@@ -57,12 +57,12 @@ public class LinkedListDeque<T> implements Deque<T>, Iterable<T> {
     @Override
     public boolean equals(Object o) {
         if (o instanceof Deque) {
-            LinkedListDeque<T> other = (LinkedListDeque<T>) o;
+            Deque<T> other = (Deque<T>) o;
             if (size() != other.size()) {
                 return false;
             }
             for (int i = 0; i < size(); i++) {
-                if (this.get(i) != other.get(i)) {
+                if (this.get(i).equals(other.get(i))) {
                     return false;
                 }
             }
