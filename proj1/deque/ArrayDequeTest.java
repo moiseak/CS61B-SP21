@@ -46,6 +46,10 @@ public class ArrayDequeTest {
     @Test
     public void Test1() {
         ArrayDeque<Integer> deque = new ArrayDeque<>();
+        deque.addFirst(1);
+        deque.addFirst(2);
+        deque.addFirst(3);
+        deque.removeFirst();
         System.out.println(deque.get(0));
     }
 }

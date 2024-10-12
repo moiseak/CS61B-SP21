@@ -3,11 +3,12 @@ package deque;
 /**
  * @author Moiads
  */
-public class ArrayDeque <T>{
+public class ArrayDeque<T> implements Deque<T> {
     private T[] array;
     int size;
     int nextlast;
     int nextfirst;
+
     public ArrayDeque() {
         array = (T[]) new Object[8];
         size = 0;
@@ -15,10 +16,7 @@ public class ArrayDeque <T>{
         nextfirst = 0;
     }
 
-    public boolean isEmpty() {
-        return size == 0;
-    }
-
+    @Override
     public int size() {
         return size;
     }
@@ -33,6 +31,7 @@ public class ArrayDeque <T>{
         return newArray;
     }
 
+    @Override
     public void addFirst(T item) {
         if (size == array.length) {
             array = resize(size * 2);
@@ -42,6 +41,7 @@ public class ArrayDeque <T>{
         size++;
     }
 
+    @Override
     public void addLast(T item) {
         if (size == array.length) {
             array = resize(size * 2);
@@ -51,6 +51,7 @@ public class ArrayDeque <T>{
         size++;
     }
 
+    @Override
     public T removeFirst() {
         if (isEmpty()) {
             return null;
@@ -62,6 +63,7 @@ public class ArrayDeque <T>{
         return temp;
     }
 
+    @Override
     public T removeLast() {
         if (isEmpty()) {
             return null;
@@ -73,11 +75,13 @@ public class ArrayDeque <T>{
         return temp;
     }
 
+    @Override
     public T get(int index) {
         int in = (nextfirst + 1 + index) % array.length;
         return array[in];
     }
 
+    @Override
     public void printDeque() {
         for (int i = 0; i < size(); i++) {
             System.out.print(get(i) + " ");
