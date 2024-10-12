@@ -109,7 +109,7 @@ public class LinkedListDequeTest {
         //System.out.println("Make sure to uncomment the lines below (and delete this print statement).");
 
         LinkedListDeque<Integer> lld1 = new LinkedListDeque<Integer>();
-        int a = lld1.getRecursive(0);
+//        int a = lld1.getRecursive(0);
         boolean passed1 = false;
         boolean passed2 = false;
         assertEquals("Should return null when removeFirst is called on an empty Deque,", null, lld1.removeFirst());
