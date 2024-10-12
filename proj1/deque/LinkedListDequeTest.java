@@ -143,7 +143,7 @@ public class LinkedListDequeTest {
 
     @Test
     public void test1() {
-        LinkedListDeque<Integer> lld1 = new LinkedListDeque<Integer>();
+        LinkedListDeque<Integer> lld1 = new LinkedListDeque<>();
         lld1.addFirst(1);
         lld1.addFirst(2);
         lld1.addFirst(3);
@@ -159,6 +159,20 @@ public class LinkedListDequeTest {
         while (iter2.hasNext()) {
             System.out.println(iter2.next());
         }
+    }
+
+    @Test
+    public void test2() {
+        LinkedListDeque<Integer> l1 = new LinkedListDeque<>();
+        LinkedListDeque<Integer> l2 = new LinkedListDeque<>();
+        l1.addFirst(1);
+        l1.addFirst(2);
+        l1.addFirst(3);
+        l2.addFirst(1);
+        l2.addFirst(2);
+        l2.addFirst(3);
+        System.out.println(l1.get(0));
+        assert l1.equals(l2);
     }
 }
 

@@ -1,15 +1,17 @@
 package deque;
 
+import org.checkerframework.checker.nullness.qual.NonNull;
+
 import java.util.Iterator;
 
 /**
  * @author Moiads
  */
-public class ArrayDeque<T> implements Deque<T> {
+public class ArrayDeque<T> implements Deque<T>, Iterable<T> {
     private T[] array;
-    int size;
-    int nextlast;
-    int nextfirst;
+    private int size;
+    private int nextlast;
+    private int nextfirst;
 
     public ArrayDeque() {
         array = (T[]) new Object[8];
@@ -18,7 +20,7 @@ public class ArrayDeque<T> implements Deque<T> {
         nextfirst = 0;
     }
 
-    public class ArrayDequeIterator implements Iterator<T> {
+    private class ArrayDequeIterator implements Iterator<T> {
         private int current;
 
         public ArrayDequeIterator() {
@@ -38,14 +40,19 @@ public class ArrayDeque<T> implements Deque<T> {
         }
     }
 
+    @Override
+    @NonNull
     public Iterator<T> iterator() {
         return new ArrayDequeIterator();
     }
 
     @Override
     public boolean equals(Object o) {
-        if (o instanceof ArrayDeque) {
+        if (o instanceof Deque) {
             ArrayDeque<T> other = (ArrayDeque<T>) o;
+            if (this.size() != other.size()) {
+                return false;
+            }
             for (int i = 0; i < size(); i++) {
                 if (this.get(i) != other.get(i)) {
                     return false;
@@ -61,7 +68,7 @@ public class ArrayDeque<T> implements Deque<T> {
         return size;
     }
 
-    public T[] resize(int newSize) {
+    private T[] resize(int newSize) {
         T[] newArray = (T[]) new Object[newSize];
         for (int i = 0; i < size; i++) {
             newArray[i] = get(i);
@@ -96,6 +103,9 @@ public class ArrayDeque<T> implements Deque<T> {
         if (isEmpty()) {
             return null;
         }
+        if (size < array.length / 4 && size > 8) {
+            array = resize(array.length / 2);
+        }
         size--;
         nextfirst = (nextfirst + 1) % array.length;
         T temp = array[nextfirst];
@@ -107,6 +117,9 @@ public class ArrayDeque<T> implements Deque<T> {
     public T removeLast() {
         if (isEmpty()) {
             return null;
+        }
+        if (size < array.length / 4 && size > 8) {
+            array = resize(array.length / 2);
         }
         size--;
         nextlast = (nextlast - 1 + array.length) % array.length;

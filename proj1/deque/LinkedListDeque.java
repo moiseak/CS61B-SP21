@@ -1,15 +1,18 @@
 package deque;
 
+
+import org.checkerframework.checker.nullness.qual.NonNull;
+
 import java.util.Iterator;
 
 /**
  * @author Moiads
  */
-public class LinkedListDeque<T> implements Deque<T> {
+public class LinkedListDeque<T> implements Deque<T>, Iterable<T> {
     private final ListNode<T> sentinel;
     private int size;
 
-    public static class ListNode<T> {
+    private static class ListNode<T> {
         T val;
         ListNode<T> next;
         ListNode<T> prev;
@@ -28,7 +31,7 @@ public class LinkedListDeque<T> implements Deque<T> {
         size = 0;
     }
 
-    public class LinkedListIterator implements Iterator<T> {
+    private class LinkedListIterator implements Iterator<T> {
         private ListNode<T> current;
 
         public LinkedListIterator() {
@@ -48,14 +51,19 @@ public class LinkedListDeque<T> implements Deque<T> {
         }
     }
 
+    @Override
+    @NonNull
     public Iterator<T> iterator() {
         return new LinkedListIterator();
     }
 
     @Override
     public boolean equals(Object o) {
-        if (o instanceof LinkedListDeque) {
+        if (o instanceof Deque) {
             LinkedListDeque<T> other = (LinkedListDeque<T>) o;
+            if (size() != other.size()) {
+                return false;
+            }
             for (int i = 0; i < size(); i++) {
                 if (this.get(i) != other.get(i)) {
                     return false;
