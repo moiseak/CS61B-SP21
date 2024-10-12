@@ -2,6 +2,8 @@ package deque;
 
 import org.junit.Test;
 
+import java.util.Iterator;
+
 import static org.junit.Assert.*;
 
 
@@ -137,6 +139,26 @@ public class LinkedListDequeTest {
             assertEquals("Should have the same value", i, (double) lld1.removeLast(), 0.0);
         }
 
+    }
+
+    @Test
+    public void test1() {
+        LinkedListDeque<Integer> lld1 = new LinkedListDeque<Integer>();
+        lld1.addFirst(1);
+        lld1.addFirst(2);
+        lld1.addFirst(3);
+        int i = lld1.getRecursive(1);
+        System.out.println(i);
+        Iterator<Integer> iter = lld1.iterator();
+        while (iter.hasNext()) {
+            System.out.println(iter.next());
+        }
+        lld1.addLast(4);
+        lld1.addLast(5);
+        Iterator<Integer> iter2 = lld1.iterator();
+        while (iter2.hasNext()) {
+            System.out.println(iter2.next());
+        }
     }
 }
 

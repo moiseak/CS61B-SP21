@@ -2,9 +2,14 @@ package deque;
 
 import org.junit.Test;
 
+import java.util.Iterator;
+
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
+/**
+ * @author Moiads
+ */
 public class ArrayDequeTest {
     @Test
     public void addRemoveTest() {
@@ -44,12 +49,16 @@ public class ArrayDequeTest {
     }
 
     @Test
-    public void Test1() {
+    public void test1() {
         ArrayDeque<Integer> deque = new ArrayDeque<>();
         deque.addFirst(1);
         deque.addFirst(2);
         deque.addFirst(3);
         deque.removeFirst();
-        System.out.println(deque.get(0));
+        Iterator<Integer> iter = deque.iterator();
+
+        while (iter.hasNext()) {
+            System.out.println(iter.next());
+        }
     }
 }

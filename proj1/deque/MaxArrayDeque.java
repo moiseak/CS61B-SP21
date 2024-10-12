@@ -7,7 +7,7 @@ import java.util.Comparator;
  */
 
 public class MaxArrayDeque<T> extends ArrayDeque<T> {
-    Comparator<T> comparator;
+    private Comparator<T> comparator;
 
     public MaxArrayDeque(Comparator<T> c) {
         super();
