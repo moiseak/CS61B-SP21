@@ -107,51 +107,17 @@ public class Model extends Observable {
      *    value, then the leading two tiles in the direction of motion merge,
      *    and the trailing tile does not.
      * */
+
     public boolean tilt(Side side) {
         boolean changed;
         changed = false;
         // TODO: Modify this.board (and perhaps this.score) to account
         // for the tilt to the Side SIDE. If the board changed, set the
         // changed local variable to true.
-        int size = board.size();
-        board.setViewingPerspective(side);
-        for (int i = 0; i < size; i++) {
-            boolean[] merged = new boolean[size];
-            for (int j = size - 2; j >= 0; j--) {
-                //定义当前tile并判断是否为空
-                Tile t = board.tile(i, j);
-                if (t == null) {
-                    continue;
-                }
-                //寻找移动目的地
-                int target = j;
-                for (int c = j + 1; c < size; c++) {
-                    if (board.tile(i, c) == null) {
-                        target = c;
-                    } else if (board.tile(i, c).value() == t.value() && !merged[c]) {
-                        target = c;
-                        merged[c] = true;
-                    } else {
-                        break;
-                    }
-                }
-                //更新位置和分数,记得move方法可以自动合并,如果合并成功会返回true
-                if (target != j) {
-                    if (board.move(i, target, t)) {
-                        score += t.value() * 2;
-                    }
-                }
-                changed = true;
-            }
-        }
-
-        checkGameOver();
-        if (changed) {
-            setChanged();
-        }
-        board.setViewingPerspective(Side.NORTH);
         return changed;
     }
+
+
 
     /** Checks if the game is over and sets the gameOver variable
      *  appropriately.
@@ -170,15 +136,6 @@ public class Model extends Observable {
      * */
     public static boolean emptySpaceExists(Board b) {
         // TODO: Fill in this function
-        int size = b.size();
-        for (int i = 0; i < size; i++) {
-            for (int j = 0; j < size; j++) {
-                if (b.tile(i, j) == null) {
-                    return true;
-                }
-            }
-        }
-        return false;
     }
 
     /**
@@ -188,17 +145,7 @@ public class Model extends Observable {
      */
     public static boolean maxTileExists(Board b) {
         // TODO: Fill in this function.
-        int size = b.size();
-        for (int i = 0; i < size; i++) {
-            for (int j = 0; j < size; j++) {
-                if (b.tile(i, j) != null) {
-                    if (b.tile(i, j).value() == MAX_PIECE) {
-                        return true;
-                    }
-                }
-            }
-        }
-        return false;
+
     }
 
     /**
@@ -209,21 +156,6 @@ public class Model extends Observable {
      */
     public static boolean atLeastOneMoveExists(Board b) {
         // TODO: Fill in this function.
-        if (emptySpaceExists(b)) {
-            return true;
-        }
-        int size = b.size();
-        for (int i = 0; i < size; i++) {
-            for (int j = 0; j < size; j++) {
-                if (j < size - 1 && b.tile(i, j).value() == b.tile(i, j + 1).value()) {
-                    return true;    //j是行,这个if是判断下方有没有相同的
-                }
-                if (i < size - 1 && b.tile(i, j).value() == b.tile(i + 1, j).value() ) {
-                    return true;    //判断右边有没有相同的
-                }
-            }
-        }
-        return false;
     }
 
 

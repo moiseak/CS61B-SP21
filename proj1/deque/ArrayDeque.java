@@ -1,5 +1,8 @@
 package deque;
 
+/**
+ * @author Moiads
+ */
 public class ArrayDeque <T>{
     private T[] array;
     int size;
