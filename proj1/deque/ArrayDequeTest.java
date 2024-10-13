@@ -61,4 +61,23 @@ public class ArrayDequeTest {
             System.out.println(iter.next());
         }
     }
+
+    @Test
+    public void test2() {
+        ArrayDeque<Integer> deque = new ArrayDeque<>();
+        ArrayDeque<Integer> deque2 = new ArrayDeque<>();
+        LinkedListDeque<Integer> linkedListDeque = new LinkedListDeque<>();
+        deque.addFirst(1);
+        deque.addFirst(2);
+        deque.addFirst(3);
+        deque2.addFirst(1);
+        deque2.addFirst(2);
+        deque2.addFirst(3);
+        linkedListDeque.addFirst(1);
+        linkedListDeque.addFirst(2);
+        linkedListDeque.addFirst(3);
+        assert deque.equals(deque);
+        assert deque.equals(linkedListDeque);
+        assert deque.equals(deque2);
+    }
 }

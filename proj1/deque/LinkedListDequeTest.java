@@ -165,14 +165,19 @@ public class LinkedListDequeTest {
     public void test2() {
         LinkedListDeque<Integer> l1 = new LinkedListDeque<>();
         LinkedListDeque<Integer> l2 = new LinkedListDeque<>();
+        ArrayDeque<Integer> l3 = new ArrayDeque<>();
+        l3.addFirst(1);
+        l3.addFirst(2);
+        l3.addFirst(3);
         l1.addFirst(1);
         l1.addFirst(2);
         l1.addFirst(3);
         l2.addFirst(1);
         l2.addFirst(2);
         l2.addFirst(3);
-        System.out.println(l1.get(0));
         assert l1.equals(l2);
+        assert l1.equals(l1);
+        assert l1.equals(l3);
     }
 }
 
