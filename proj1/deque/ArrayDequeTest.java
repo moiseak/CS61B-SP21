@@ -79,5 +79,6 @@ public class ArrayDequeTest {
         assert deque.equals(deque);
         assert deque.equals(linkedListDeque);
         assert deque.equals(deque2);
+
     }
 }
