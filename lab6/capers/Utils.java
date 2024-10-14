@@ -1,10 +1,10 @@
 package capers;
 
+import capers.Dog;
 import java.io.BufferedOutputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.FileInputStream;
-import java.io.FilenameFilter;
 import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
@@ -12,11 +12,6 @@ import java.io.Serializable;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.nio.charset.StandardCharsets;
-import java.security.MessageDigest;
-import java.security.NoSuchAlgorithmException;
-import java.util.Arrays;
-import java.util.Formatter;
-import java.util.List;
 
 
 /** Assorted utilities.
@@ -96,14 +91,14 @@ class Utils {
 
     /* OTHER FILE UTILITIES */
 
-    /** Return the concatentation of FIRST and OTHERS into a File designator,
+    /** Return the concatenation of FIRST and OTHERS into a File designator,
      *  analogous to the {@link java.nio.file.Paths.#get(String, String[])}
      *  method. */
     static File join(String first, String... others) {
         return Paths.get(first, others).toFile();
     }
 
-    /** Return the concatentation of FIRST and OTHERS into a File designator,
+    /** Return the concatenation of FIRST and OTHERS into a File designator,
      *  analogous to the {@link java.nio.file.Paths.#get(String, String[])}
      *  method. */
     static File join(File first, String... others) {
