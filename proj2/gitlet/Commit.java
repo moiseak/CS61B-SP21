@@ -4,8 +4,9 @@ package gitlet;
 import java.io.File;
 import java.io.IOException;
 import java.io.Serializable;
-import java.util.ArrayList;
 import java.util.Date; // TODO: You'll likely use this in this class
+import java.util.HashMap;
+import java.util.Objects;
 
 /** Represents a gitlet commit object.
  *  TODO: It's a good idea to give a description here of what else this Class
@@ -22,47 +23,64 @@ public class Commit implements Serializable {
      */
 
     /** The message of this Commit. */
-    private final String message;
-    private final Date commitDate;
-    private static ArrayList<File> blobs;
-    private final String hashCodeCommit;
-    private final Commit parent;
-    private static ArrayList<String> hashCodeBlobs;
+    private String message;
+    private String commitDate;
+    private static HashMap<String, File> blobs = new HashMap<>();
+    private String hashCodeCommit;
+    private String parent;
     private String branch;
+    private HashMap<String, String> fileHashcode = new HashMap<>();
     /* TODO: fill in the rest of this class. */
 
-    public Commit(String message, Commit parent) {
+    public Commit() {
+        this.message  = "initial commit";
+        this.commitDate = new Date(0).toString();
+        this.parent = "";
+        this.branch = "master";
+        hashCodeCommit = Utils.sha1(this.message, this.commitDate, this.parent, this.branch);
+    }
+
+    public Commit(String message, String parent, String branch) {
         this.message = message;
         this.parent = parent;
-        hashCodeCommit = Utils.sha1(this.message);
-        if (this.parent == null) {
-            this.commitDate = new Date(0);
-        } else {
-            this.commitDate = new Date();
-        }
+        this.branch = branch;
+        this.commitDate = new Date().toString();
+        hashCodeCommit = Utils.sha1(this.message, this.commitDate, this.parent, this.branch);
     }
 
-    public static void addBlob(File file) {
-        blobs.add(file);
+    public HashMap<String, String> getFileHashcode() {
+        return this.fileHashcode;
     }
 
-    public static void addHashBlob(String hash) {
-        hashCodeBlobs.add(hash);
+    public void setFileHashcode(HashMap<String, String> fileHashcode) {
+        this.fileHashcode = fileHashcode;
     }
 
-    public static ArrayList<String> getBlobHash() {
-        return hashCodeBlobs;
+    public void addFileHashcode(String hashcode, String filename) {
+        this.fileHashcode.put(filename,hashcode);
+    }
+
+    public static HashMap<String, File> getBlobs() {
+        return blobs;
+    }
+
+    public String getHashcodeCommit() {
+        return this.hashCodeCommit;
+    }
+
+    public static void addBlob(String fileHash, File file) {
+        blobs.put(fileHash, file);
     }
 
     public String getMessage() {
         return this.message;
     }
 
-    public Date getCommitDate() {
+    public String getCommitDate() {
         return this.commitDate;
     }
 
-    public Commit getParent() {
+    public String getParent() {
         return this.parent;
     }
 
@@ -70,14 +88,9 @@ public class Commit implements Serializable {
         return this.branch;
     }
 
-    public void setBranch(String branch) {
-        this.branch = branch;
-    }
-
     public void commit() throws IOException {
-        File commitFile = Utils.join(Repository.GITLET_DIR, hashCodeCommit);
-        commitFile.createNewFile();
+        File commitFile = Utils.join(Repository.COMMIT, this.getHashcodeCommit());
         Utils.writeObject(commitFile, this);
-        Utils.restrictedDelete()
+        commitFile.createNewFile();
     }
 }

@@ -18,11 +18,13 @@ public class Main {
                 Repository.init();
                 break;
             case "add":
-                // TODO: handle the `add [filename]` command
                 String secondArg = args[1];
                 Repository.add(secondArg);
                 break;
-            // TODO: FILL THE REST IN
+            case "commit":
+                String secondArg1 = args[1];
+                Repository.commit(secondArg1);
+                break;
         }
     }
 }
