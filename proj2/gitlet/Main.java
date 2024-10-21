@@ -23,6 +23,7 @@ public class Main {
                 Repository.add(secondArg);
                 break;
             case "commit":
+                //args : commit message
                 String secondArg1 = args[1];
                 Repository.commit(secondArg1);
                 break;
@@ -30,10 +31,29 @@ public class Main {
                 Repository.log();
                 break;
             case "checkout":
+                // maybe"--",  commitId ,  or branch
                 String secondArg2 = args[1];
                 if (Objects.equals(secondArg2, "--")) {
+                    //first arg checkout,  second  is "--", third is file name
+                    //checkout -- []
+                    // filename
                     String thirdArg = args[2];
+                    //arg is filename
                     Repository.checkout(thirdArg);
+                } else {
+                    String fourthArg = args[2];
+                    if (Objects.equals(fourthArg, "--")) {
+                        //args : first is checkout, second is commitId, third is --", fourth is filename
+                        //checkout [] -- []
+
+                        //filename
+                        String fifthArg = args[3];
+                        //args are commitId and file name
+                        Repository.checkoutCommit(secondArg2, fifthArg);
+                    }
+//                    else {
+//                        //checkout []
+//                    }
                 }
         }
     }

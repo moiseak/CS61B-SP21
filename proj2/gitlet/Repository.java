@@ -30,6 +30,7 @@ public class Repository implements Serializable {
     public static final File GITLET_DIR = join(CWD, ".gitlet");
     /* The staging */
     public static final File STAGING_AREA = join(GITLET_DIR, "staging");
+    //各个需要保存的常量
     public static final File COMMIT = Utils.join(Repository.GITLET_DIR, "commit");
     public static final File HEAD_FILE = join(GITLET_DIR, "HEAD");
     public static final File MASTER_FILE = join(GITLET_DIR, "master");
@@ -41,8 +42,8 @@ public class Repository implements Serializable {
     //分支
     public static Commit HEAD;
     public static Commit master;
-    //string是文件的哈希值,file是具体的文件
-    public static HashMap<String, File> blobs = new HashMap<>();
+    //string是文件的哈希值,byte是具体的文件
+    public static HashMap<String, byte[]> blobs = new HashMap<>();
 
 
     public static void init() throws IOException {
@@ -63,6 +64,7 @@ public class Repository implements Serializable {
         MASTER_FILE.createNewFile();
         COMMITS_FILE.createNewFile();
         BLOBS_FILE.createNewFile();
+        //第一次提交
         Commit firstCommit = new Commit();
         HEAD = firstCommit;
         master = firstCommit;
@@ -79,8 +81,8 @@ public class Repository implements Serializable {
         //找到本地文件
         File add = join(CWD, file);
         //得到文件哈希值
-        String addHash = sha1(readContents(add));
-        blobs = (HashMap<String, File>) readObject(BLOBS_FILE, HashMap.class);
+        String addHash = sha1((Object) readContents(add));
+        blobs = (HashMap<String, byte[]>) readObject(BLOBS_FILE, HashMap.class);
         //遍历blobs,如果要提交的文件与blobs中的文件相同则不添加新的blob
         if (blobs != null){
             for (String key : blobs.keySet()) {
@@ -88,7 +90,7 @@ public class Repository implements Serializable {
                 if (addHash.equals(key)) {
                     //相当于把本地文件复制一份到stage
                     File addStage = join(STAGING_AREA, file);
-                    writeContents(addStage, readContents(add));
+                    writeContents(addStage, (Object) readContents(add));
                     addStage.createNewFile();
                     return;
                 }
@@ -96,8 +98,10 @@ public class Repository implements Serializable {
         }
         //不存在相同,于是创建新的blob,并且在暂存区创建文件
         //!!!这里是唯一改变blobs的地方!!!
-        blobs.put(addHash, add);
-        System.out.println(readContentsAsString(blobs.get(addHash)));////
+        if (blobs != null) {
+            blobs.put(addHash, readContents(add));
+        }
+        //更改完blobs就保存
         writeObject(BLOBS_FILE, blobs);
         //相当于把本地文件复制一份到stage
         File addStage = join(STAGING_AREA, file);
@@ -154,7 +158,7 @@ public class Repository implements Serializable {
                 }
             }
         }
-        //ToDo:提交树?
+        //更新并保存
         commit.commit();
         HEAD = commit;
         master = commit;
@@ -174,6 +178,7 @@ public class Repository implements Serializable {
         }
     }
 
+    //辅助打印函数
     private static void printCommit() {
         System.out.println("===");
         System.out.println("commit " + HEAD.getHashcodeCommit());
@@ -183,19 +188,43 @@ public class Repository implements Serializable {
     }
 
     public static void checkout(String file) throws IOException {
+        //读取
         HEAD = readObject(HEAD_FILE, Commit.class);
-        blobs = (HashMap<String, File>) readObject(BLOBS_FILE, HashMap.class);
+        blobs = (HashMap<String, byte[]>) readObject(BLOBS_FILE, HashMap.class);
         File checkoutFile = join(CWD, file);
-        if (HEAD.getFileHashcode().get(file) == null) {
+        //判断是否含有要checkout的文件
+        if (!HEAD.getFileHashcode().containsKey(file)) {
             System.out.println("File does not exist in that commit.");
             return;
         }
+        //获取文件并写入
         String checkHash = HEAD.getFileHashcode().get(file);
-        File checkFile = blobs.get(checkHash);
-        System.out.println(readContentsAsString(checkFile));///
-        writeContents(checkoutFile, (Object) readContents(checkFile));
+        byte[] checkFile = blobs.get(checkHash);
+        writeContents(checkoutFile, (Object) checkFile);
         checkoutFile.createNewFile();
-        System.out.println(readContentsAsString(checkoutFile));////
+    }
+
+    public static void checkoutCommit(String commitId, String file) throws IOException {
+        commits = (HashMap<String, Commit>) readObject(COMMITS_FILE, HashMap.class);
+        blobs = (HashMap<String, byte[]>) readObject(BLOBS_FILE, HashMap.class);
+        //是否包含该提交
+        if (!commits.containsKey(commitId)) {
+            System.out.println("No commit with that id exists.");
+            return;
+        }
+        Commit checkCommit = commits.get(commitId);
+
+        //该提交是否包含所求文件
+        if (!checkCommit.getFileHashcode().containsKey(file)) {
+            System.out.println("File does not exist in that commit.");
+            return;
+        }
+        String fileHash = checkCommit.getFileHashcode().get(file);
+        //获取文件并写入
+        byte[] checkByte = blobs.get(fileHash);
+        File checkoutFile = join(CWD, file);
+        writeContents(checkoutFile, (Object) checkByte);
+        checkoutFile.createNewFile();
     }
 }
 

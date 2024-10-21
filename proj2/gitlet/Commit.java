@@ -27,8 +27,8 @@ public class Commit implements Serializable {
     private String hashCodeCommit;
     private String parent;
     private String branch;
+    //文件名与文件哈希值的映射
     private HashMap<String, String> fileHashcode = new HashMap<>();
-    /* TODO: fill in the rest of this class. */
 
     public Commit() {
         this.message  = "initial commit";
