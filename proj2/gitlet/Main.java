@@ -6,12 +6,12 @@ import java.util.Objects;
 /** Driver class for Gitlet, a subset of the Git version-control system.
  *  @author TODO
  */
-public class Main {
+public class Main{
 
     /** Usage: java gitlet.Main ARGS, where ARGS contains
      *  <COMMAND> <OPERAND1> <OPERAND2> ... 
      */
-    public static void main(String[] args) throws IOException {
+    public static void main(String[] args) {
         // TODO: what if args is empty?
         if (args.length == 0) {
             System.out.println("Please enter a command.");
@@ -20,11 +20,19 @@ public class Main {
         String firstArg = args[0];
         switch(firstArg) {
             case "init":
-                Repository.init();
+                try {
+                    Repository.init();
+                } catch (IOException e) {
+                    throw new RuntimeException(e);
+                }
                 break;
             case "add":
                 String secondArg = args[1];
-                Repository.add(secondArg);
+                try {
+                    Repository.add(secondArg);
+                } catch (IOException e) {
+                    throw new RuntimeException(e);
+                }
                 break;
             case "commit":
                 //args : commit message
@@ -32,7 +40,11 @@ public class Main {
                     System.out.println("Please enter a commit message.");
                 }
                 String secondArg1 = args[1];
-                Repository.commit(secondArg1);
+                try {
+                    Repository.commit(secondArg1);
+                } catch (IOException e) {
+                    throw new RuntimeException(e);
+                }
                 break;
             case "log":
                 Repository.log();
@@ -46,7 +58,11 @@ public class Main {
                     // filename
                     String thirdArg = args[2];
                     //arg is filename
-                    Repository.checkout(thirdArg);
+                    try {
+                        Repository.checkout(thirdArg);
+                    } catch (IOException e) {
+                        throw new RuntimeException(e);
+                    }
                 } else {
                     String fourthArg = args[2];
                     if (Objects.equals(fourthArg, "--")) {
@@ -56,7 +72,11 @@ public class Main {
                         //filename
                         String fifthArg = args[3];
                         //args are commitId and file name
-                        Repository.checkoutCommit(secondArg2, fifthArg);
+                        try {
+                            Repository.checkoutCommit(secondArg2, fifthArg);
+                        } catch (IOException e) {
+                            throw new RuntimeException(e);
+                        }
                     }
 //                    else {
 //                        //checkout []
