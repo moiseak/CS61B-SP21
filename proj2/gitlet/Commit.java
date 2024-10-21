@@ -27,7 +27,7 @@ public class Commit implements Serializable {
     private String hashCodeCommit;
     private String parent;
     private String branch;
-    //文件名与文件哈希值的映射
+    //file and file hash value
     private HashMap<String, String> fileHashcode = new HashMap<>();
 
     public Commit() {

@@ -30,19 +30,19 @@ public class Repository implements Serializable {
     public static final File GITLET_DIR = join(CWD, ".gitlet");
     /* The staging */
     public static final File STAGING_AREA = join(GITLET_DIR, "staging");
-    //各个需要保存的常量
+    //Each constant that needs to be saved
     public static final File COMMIT = Utils.join(Repository.GITLET_DIR, "commit");
     public static final File HEAD_FILE = join(GITLET_DIR, "HEAD");
     public static final File MASTER_FILE = join(GITLET_DIR, "master");
     public static final File COMMITS_FILE = join(GITLET_DIR, "commits");
     public static final File BLOBS_FILE = join(GITLET_DIR, "blobs");
 
-    //提交的哈希值与提交的映射
+    //Commit hash value to commit mapping
     public static HashMap<String, Commit> commits = new HashMap<>();
-    //分支
+    //branch
     public static Commit HEAD;
     public static Commit master;
-    //string是文件的哈希值,byte是具体的文件
+    //string is file hash value, byte[] is file content
     public static HashMap<String, byte[]> blobs = new HashMap<>();
 
 
@@ -64,13 +64,15 @@ public class Repository implements Serializable {
         MASTER_FILE.createNewFile();
         COMMITS_FILE.createNewFile();
         BLOBS_FILE.createNewFile();
-        //第一次提交
+
+        //first commit
         Commit firstCommit = new Commit();
         HEAD = firstCommit;
         master = firstCommit;
         firstCommit.commit();
         commits.put(firstCommit.getHashcodeCommit(), firstCommit);
-        //保存
+
+        //save
         writeObject(BLOBS_FILE, blobs);
         writeObject(HEAD_FILE, HEAD);
         writeObject(MASTER_FILE, master);
@@ -78,17 +80,17 @@ public class Repository implements Serializable {
     }
 
     public static void add(String file) throws IOException {
-        //找到本地文件
+        //find local file
         File add = join(CWD, file);
-        //得到文件哈希值
+        //Get file hash value
         String addHash = sha1((Object) readContents(add));
         blobs = (HashMap<String, byte[]>) readObject(BLOBS_FILE, HashMap.class);
-        //遍历blobs,如果要提交的文件与blobs中的文件相同则不添加新的blob
+        //Traverse blobs without adding new blobs if the file to be submitted is the same as the file in the blobs
         if (blobs != null){
             for (String key : blobs.keySet()) {
-                //找到相同的哈希值就不再添加了
+                //If the same hash value is found, it will not be added again.
                 if (addHash.equals(key)) {
-                    //相当于把本地文件复制一份到stage
+                    //Equivalent to copying a local file to the stage
                     File addStage = join(STAGING_AREA, file);
                     writeContents(addStage, (Object) readContents(add));
                     addStage.createNewFile();
@@ -96,53 +98,53 @@ public class Repository implements Serializable {
                 }
             }
         }
-        //不存在相同,于是创建新的blob,并且在暂存区创建文件
-        //!!!这里是唯一改变blobs的地方!!!
+        //There is no identical one, so create a new blob and create a file in the temporary storage area.
+        //!!!This is the only place to change blobs!!!
         if (blobs != null) {
             blobs.put(addHash, readContents(add));
         }
-        //更改完blobs就保存
+        //save
         writeObject(BLOBS_FILE, blobs);
-        //相当于把本地文件复制一份到stage
+        //copy to stage
         File addStage = join(STAGING_AREA, file);
         writeContents(addStage, (Object) readContents(add));
         addStage.createNewFile();
     }
 
     public static void commit(String message) throws IOException {
-        //获取父提交
+        //get parent commit
         HEAD = readObject(HEAD_FILE, Commit.class);
         master = readObject(MASTER_FILE, Commit.class);
         commits = (HashMap<String, Commit>) readObject(COMMITS_FILE, HashMap.class);
         String parentHash = HEAD.getHashcodeCommit();
         String branchName = HEAD.getBranch();
         Commit commit = new Commit(message, parentHash, branchName);
-        //默认与父提交的文件相同
+        //Defaults to the same file as the parent commit
         commit.setFileHashcode(HEAD.getFileHashcode());
-        //如果不同,则进行更改
-        //获取暂存区所有的文件名
+        //change file-hashcode
+        //get all filename in stage
         List<String> hashList = plainFilenamesIn(STAGING_AREA);
-        //暂存区不为空
+        //stage not null
         if (hashList != null) {
             for (String s : hashList) {
-                //判断是否找到对应文件
+                //whether you find
                 boolean flag = false;
-                //根据文件名获取stage里面的文件
+                //Get the files in the stage based on the file name
                 File file = join(STAGING_AREA, s);
-                //获取对应文件的哈希
+                //Get the hash of the corresponding file
                 String fileHash = sha1((Object) readContents(file));
-                //判断从父提交继承的文件与stage的文件名对应的文件哈希是否相等
+                //Determine whether the file hash corresponding
                 if (commit.getFileHashcode().isEmpty()) {
                     flag = true;
                     commit.addFileHashcode(s, fileHash);
                     file.delete();
                 }
                 else {
-                    //key是文件名
+                    //key is filename
                     for (String key : commit.getFileHashcode().keySet()) {
-                        //找到相等的文件名
+                        //find equal filename
                         if (s.equals(key)) {
-                            //如果哈希值不相等则更新对应文件名的哈希值
+                            //hash value not equal
                             if (!fileHash.equals(commit.getFileHashcode().get(key))) {
                                 commit.addFileHashcode(key, fileHash);
                             }
@@ -151,14 +153,14 @@ public class Repository implements Serializable {
                         }
                     }
                 }
-                //如果没有找到该文件,则直接添加
+                //not find
                 if (!flag) {
                     commit.addFileHashcode(s, fileHash);
                     file.delete();
                 }
             }
         }
-        //更新并保存
+        //save
         commit.commit();
         HEAD = commit;
         master = commit;
@@ -178,7 +180,7 @@ public class Repository implements Serializable {
         }
     }
 
-    //辅助打印函数
+    //helper print
     private static void printCommit() {
         System.out.println("===");
         System.out.println("commit " + HEAD.getHashcodeCommit());
@@ -188,16 +190,15 @@ public class Repository implements Serializable {
     }
 
     public static void checkout(String file) throws IOException {
-        //读取
         HEAD = readObject(HEAD_FILE, Commit.class);
         blobs = (HashMap<String, byte[]>) readObject(BLOBS_FILE, HashMap.class);
         File checkoutFile = join(CWD, file);
-        //判断是否含有要checkout的文件
+        //Determine whether there are files to be checked out
         if (!HEAD.getFileHashcode().containsKey(file)) {
             System.out.println("File does not exist in that commit.");
             return;
         }
-        //获取文件并写入
+        //Get the file and write it
         String checkHash = HEAD.getFileHashcode().get(file);
         byte[] checkFile = blobs.get(checkHash);
         writeContents(checkoutFile, (Object) checkFile);
@@ -207,20 +208,20 @@ public class Repository implements Serializable {
     public static void checkoutCommit(String commitId, String file) throws IOException {
         commits = (HashMap<String, Commit>) readObject(COMMITS_FILE, HashMap.class);
         blobs = (HashMap<String, byte[]>) readObject(BLOBS_FILE, HashMap.class);
-        //是否包含该提交
+        //Whether to include this commit
         if (!commits.containsKey(commitId)) {
             System.out.println("No commit with that id exists.");
             return;
         }
         Commit checkCommit = commits.get(commitId);
 
-        //该提交是否包含所求文件
+        //whether this commit have the file
         if (!checkCommit.getFileHashcode().containsKey(file)) {
             System.out.println("File does not exist in that commit.");
             return;
         }
         String fileHash = checkCommit.getFileHashcode().get(file);
-        //获取文件并写入
+        //get and write
         byte[] checkByte = blobs.get(fileHash);
         File checkoutFile = join(CWD, file);
         writeContents(checkoutFile, (Object) checkByte);
