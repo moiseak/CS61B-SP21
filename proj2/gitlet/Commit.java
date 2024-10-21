@@ -4,9 +4,8 @@ package gitlet;
 import java.io.File;
 import java.io.IOException;
 import java.io.Serializable;
-import java.util.Date; // TODO: You'll likely use this in this class
-import java.util.HashMap;
-import java.util.Objects;
+import java.text.SimpleDateFormat;
+import java.util.*;
 
 /** Represents a gitlet commit object.
  *  TODO: It's a good idea to give a description here of what else this Class
@@ -25,7 +24,6 @@ public class Commit implements Serializable {
     /** The message of this Commit. */
     private String message;
     private String commitDate;
-    private static HashMap<String, File> blobs = new HashMap<>();
     private String hashCodeCommit;
     private String parent;
     private String branch;
@@ -34,18 +32,26 @@ public class Commit implements Serializable {
 
     public Commit() {
         this.message  = "initial commit";
-        this.commitDate = new Date(0).toString();
+        Date d = new Date(0);
+        SimpleDateFormat sdf = new SimpleDateFormat("EEE MMM dd HH:mm:ss yyyy Z", Locale.ENGLISH);
+        sdf.setTimeZone(TimeZone.getTimeZone("GMT-8:00"));
+        String formattedDate = sdf.format(d);
+        this.commitDate = formattedDate;
         this.parent = "";
         this.branch = "master";
-        hashCodeCommit = Utils.sha1(this.message, this.commitDate, this.parent, this.branch);
+        this.hashCodeCommit = Utils.sha1(this.message, this.commitDate);
     }
 
     public Commit(String message, String parent, String branch) {
         this.message = message;
         this.parent = parent;
         this.branch = branch;
-        this.commitDate = new Date().toString();
-        hashCodeCommit = Utils.sha1(this.message, this.commitDate, this.parent, this.branch);
+        Date d = new Date();
+        SimpleDateFormat sdf = new SimpleDateFormat("EEE MMM dd HH:mm:ss yyyy Z", Locale.ENGLISH);
+        sdf.setTimeZone(TimeZone.getTimeZone("GMT-8:00"));
+        String formattedDate = sdf.format(d);
+        this.commitDate = formattedDate;
+        hashCodeCommit = Utils.sha1(this.message, this.commitDate, this.parent);
     }
 
     public HashMap<String, String> getFileHashcode() {
@@ -56,24 +62,20 @@ public class Commit implements Serializable {
         this.fileHashcode = fileHashcode;
     }
 
-    public void addFileHashcode(String hashcode, String filename) {
+    public void addFileHashcode(String filename, String hashcode) {
         this.fileHashcode.put(filename,hashcode);
-    }
-
-    public static HashMap<String, File> getBlobs() {
-        return blobs;
     }
 
     public String getHashcodeCommit() {
         return this.hashCodeCommit;
     }
 
-    public static void addBlob(String fileHash, File file) {
-        blobs.put(fileHash, file);
-    }
-
     public String getMessage() {
         return this.message;
+    }
+
+    public String getDate() {
+        return this.commitDate;
     }
 
     public String getCommitDate() {
@@ -81,6 +83,9 @@ public class Commit implements Serializable {
     }
 
     public String getParent() {
+        if (Objects.equals(this.parent, "")) {
+            return null;
+        }
         return this.parent;
     }
 
@@ -90,7 +95,7 @@ public class Commit implements Serializable {
 
     public void commit() throws IOException {
         File commitFile = Utils.join(Repository.COMMIT, this.getHashcodeCommit());
-        Utils.writeObject(commitFile, this);
         commitFile.createNewFile();
+        Utils.writeObject(commitFile, this);
     }
 }
