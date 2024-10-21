@@ -13,6 +13,10 @@ public class Main {
      */
     public static void main(String[] args) throws IOException {
         // TODO: what if args is empty?
+        if (args.length == 0) {
+            System.out.println("Please enter a command.");
+            System.exit(0);
+        }
         String firstArg = args[0];
         switch(firstArg) {
             case "init":
@@ -24,6 +28,9 @@ public class Main {
                 break;
             case "commit":
                 //args : commit message
+                if (args.length == 1) {
+                    System.out.println("Please enter a commit message.");
+                }
                 String secondArg1 = args[1];
                 Repository.commit(secondArg1);
                 break;

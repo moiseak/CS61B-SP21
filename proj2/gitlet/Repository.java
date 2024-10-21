@@ -82,9 +82,13 @@ public class Repository implements Serializable {
     public static void add(String file) throws IOException {
         //find local file
         File add = join(CWD, file);
+        if (!add.exists()) {
+            System.out.println("File does not exist.");
+            return;
+        }
         //Get file hash value
         String addHash = sha1((Object) readContents(add));
-        blobs = (HashMap<String, byte[]>) readObject(BLOBS_FILE, HashMap.class);
+        blobs =  readObject(BLOBS_FILE, HashMap.class);
         //Traverse blobs without adding new blobs if the file to be submitted is the same as the file in the blobs
         if (blobs != null){
             for (String key : blobs.keySet()) {
@@ -115,7 +119,7 @@ public class Repository implements Serializable {
         //get parent commit
         HEAD = readObject(HEAD_FILE, Commit.class);
         master = readObject(MASTER_FILE, Commit.class);
-        commits = (HashMap<String, Commit>) readObject(COMMITS_FILE, HashMap.class);
+        commits = readObject(COMMITS_FILE, HashMap.class);
         String parentHash = HEAD.getHashcodeCommit();
         String branchName = HEAD.getBranch();
         Commit commit = new Commit(message, parentHash, branchName);
@@ -159,6 +163,9 @@ public class Repository implements Serializable {
                     file.delete();
                 }
             }
+        } else {
+            System.out.println("No changes added to the commit.");
+            return;
         }
         //save
         commit.commit();
@@ -173,7 +180,7 @@ public class Repository implements Serializable {
     public static void log() {
         HEAD = readObject(HEAD_FILE, Commit.class);
         master = readObject(MASTER_FILE, Commit.class);
-        commits = (HashMap<String, Commit>) readObject(COMMITS_FILE, HashMap.class);
+        commits = readObject(COMMITS_FILE, HashMap.class);
         while (HEAD != null) {
             printCommit();
             HEAD = (Commit) commits.get(HEAD.getParent());
@@ -191,7 +198,7 @@ public class Repository implements Serializable {
 
     public static void checkout(String file) throws IOException {
         HEAD = readObject(HEAD_FILE, Commit.class);
-        blobs = (HashMap<String, byte[]>) readObject(BLOBS_FILE, HashMap.class);
+        blobs = readObject(BLOBS_FILE, HashMap.class);
         File checkoutFile = join(CWD, file);
         //Determine whether there are files to be checked out
         if (!HEAD.getFileHashcode().containsKey(file)) {
@@ -206,8 +213,8 @@ public class Repository implements Serializable {
     }
 
     public static void checkoutCommit(String commitId, String file) throws IOException {
-        commits = (HashMap<String, Commit>) readObject(COMMITS_FILE, HashMap.class);
-        blobs = (HashMap<String, byte[]>) readObject(BLOBS_FILE, HashMap.class);
+        commits = readObject(COMMITS_FILE, HashMap.class);
+        blobs = readObject(BLOBS_FILE, HashMap.class);
         //Whether to include this commit
         if (!commits.containsKey(commitId)) {
             System.out.println("No commit with that id exists.");
