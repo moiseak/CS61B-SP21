@@ -82,6 +82,22 @@ public class Main{
 //                        //checkout []
 //                    }
                 }
+                break;
+            case "rm":
+                String secondArg3 = args[1];
+                try {
+                    Repository.rm(secondArg3);
+                } catch (IOException e) {
+                    throw new RuntimeException(e);
+                }
+                break;
+            case "global-log":
+                Repository.logGlobal();
+                break;
+            case "find":
+                String secondArg4 = args[1];
+                Repository.find(secondArg4);
+                break;
         }
     }
 }

@@ -22,11 +22,10 @@ public class Commit implements Serializable {
      */
 
     /** The message of this Commit. */
-    private String message;
-    private String commitDate;
-    private String hashCodeCommit;
-    private String parent;
-    private String branch;
+    private final String message;
+    private final String commitDate;
+    private final String hashCodeCommit;
+    private final String parent;
     //file and file hash value
     private HashMap<String, String> fileHashcode = new HashMap<>();
 
@@ -35,22 +34,18 @@ public class Commit implements Serializable {
         Date d = new Date(0);
         SimpleDateFormat sdf = new SimpleDateFormat("EEE MMM dd HH:mm:ss yyyy Z", Locale.ENGLISH);
         sdf.setTimeZone(TimeZone.getTimeZone("GMT-8:00"));
-        String formattedDate = sdf.format(d);
-        this.commitDate = formattedDate;
+        this.commitDate = sdf.format(d);
         this.parent = "";
-        this.branch = "master";
         this.hashCodeCommit = Utils.sha1(this.message, this.commitDate);
     }
 
-    public Commit(String message, String parent, String branch) {
+    public Commit(String message, String parent) {
         this.message = message;
         this.parent = parent;
-        this.branch = branch;
         Date d = new Date();
         SimpleDateFormat sdf = new SimpleDateFormat("EEE MMM dd HH:mm:ss yyyy Z", Locale.ENGLISH);
         sdf.setTimeZone(TimeZone.getTimeZone("GMT-8:00"));
-        String formattedDate = sdf.format(d);
-        this.commitDate = formattedDate;
+        this.commitDate = sdf.format(d);
         hashCodeCommit = Utils.sha1(this.message, this.commitDate, this.parent);
     }
 
@@ -78,19 +73,11 @@ public class Commit implements Serializable {
         return this.commitDate;
     }
 
-    public String getCommitDate() {
-        return this.commitDate;
-    }
-
     public String getParent() {
         if (Objects.equals(this.parent, "")) {
             return null;
         }
         return this.parent;
-    }
-
-    public String getBranch() {
-        return this.branch;
     }
 
     public void commit() throws IOException {

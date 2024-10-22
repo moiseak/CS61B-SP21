@@ -24,24 +24,34 @@ public class Repository implements Serializable {
       variable is used. We've provided two examples for you.
      */
 
-    /** The current working directory. */
+    /* The current working directory. */
     public static final File CWD = new File(System.getProperty("user.dir"));
-    /** The .gitlet directory. */
+    /* The .gitlet directory. */
     public static final File GITLET_DIR = join(CWD, ".gitlet");
     /* The staging */
     public static final File STAGING_AREA = join(GITLET_DIR, "staging");
     //Each constant that needs to be saved
+    //all commits
     public static final File COMMIT = Utils.join(Repository.GITLET_DIR, "commit");
+    //HEAD commit
     public static final File HEAD_FILE = join(GITLET_DIR, "HEAD");
-    public static final File MASTER_FILE = join(GITLET_DIR, "master");
+    //hashmap about commitId to commit
     public static final File COMMITS_FILE = join(GITLET_DIR, "commits");
+    //hashmap about filename to file byte array
     public static final File BLOBS_FILE = join(GITLET_DIR, "blobs");
+    //hashmap about branch name to branch
+    public static final File BRANCHES_FILE = join(GITLET_DIR, "branches");
+    //current branch
+    public static final File BRANCH_FILE = join(GITLET_DIR, "branch");
 
     //Commit hash value to commit mapping
     public static HashMap<String, Commit> commits = new HashMap<>();
-    //branch
+    //current commit
     public static Commit HEAD;
-    public static Commit master;
+    //current branch
+    public static Commit currentBranch;
+    //branches
+    public static HashMap<String, Commit> branches = new HashMap<>();
     //string is file hash value, byte[] is file content
     public static HashMap<String, byte[]> blobs = new HashMap<>();
 
@@ -61,22 +71,28 @@ public class Repository implements Serializable {
             COMMIT.mkdir();
         }
         HEAD_FILE.createNewFile();
-        MASTER_FILE.createNewFile();
         COMMITS_FILE.createNewFile();
+        BRANCH_FILE.createNewFile();
+        BRANCHES_FILE.createNewFile();
         BLOBS_FILE.createNewFile();
 
         //first commit
         Commit firstCommit = new Commit();
         HEAD = firstCommit;
-        master = firstCommit;
         firstCommit.commit();
         commits.put(firstCommit.getHashcodeCommit(), firstCommit);
+        //default branch name is master
+        branches.put("master", firstCommit);
 
-        //save
-        writeObject(BLOBS_FILE, blobs);
         writeObject(HEAD_FILE, HEAD);
-        writeObject(MASTER_FILE, master);
         writeObject(COMMITS_FILE, commits);
+        //save blob
+        writeObject(BLOBS_FILE, blobs);
+        //save current branch
+        writeObject(BRANCH_FILE, firstCommit);
+        //save all branch
+        writeObject(BRANCHES_FILE, branches);
+
     }
 
     public static void add(String file) throws IOException {
@@ -118,11 +134,11 @@ public class Repository implements Serializable {
     public static void commit(String message) throws IOException {
         //get parent commit
         HEAD = readObject(HEAD_FILE, Commit.class);
-        master = readObject(MASTER_FILE, Commit.class);
+        currentBranch = readObject(BRANCH_FILE, Commit.class);
         commits = readObject(COMMITS_FILE, HashMap.class);
+        branches = readObject(BRANCHES_FILE, HashMap.class);
         String parentHash = HEAD.getHashcodeCommit();
-        String branchName = HEAD.getBranch();
-        Commit commit = new Commit(message, parentHash, branchName);
+        Commit commit = new Commit(message, parentHash);
         //Defaults to the same file as the parent commit
         commit.setFileHashcode(HEAD.getFileHashcode());
         //change file-hashcode
@@ -170,16 +186,18 @@ public class Repository implements Serializable {
         //save
         commit.commit();
         HEAD = commit;
-        master = commit;
+        currentBranch = commit;
+        //update
         commits.put(commit.getHashcodeCommit(), commit);
+        branches.put("master", currentBranch);
         writeObject(HEAD_FILE, HEAD);
-        writeObject(MASTER_FILE, master);
+        writeObject(BRANCH_FILE, currentBranch);
         writeObject(COMMITS_FILE, commits);
+        writeObject(BRANCHES_FILE, branches);
     }
 
     public static void log() {
         HEAD = readObject(HEAD_FILE, Commit.class);
-        master = readObject(MASTER_FILE, Commit.class);
         commits = readObject(COMMITS_FILE, HashMap.class);
         while (HEAD != null) {
             printCommit();
@@ -187,12 +205,21 @@ public class Repository implements Serializable {
         }
     }
 
-    //helper print
+    //helper print to log
     private static void printCommit() {
         System.out.println("===");
         System.out.println("commit " + HEAD.getHashcodeCommit());
         System.out.println("Date: " + HEAD.getDate());
         System.out.println(HEAD.getMessage());
+        System.out.println();
+    }
+
+    //help print to log-global
+    private static void printCommit(Commit commit) {
+        System.out.println("===");
+        System.out.println("commit " + commit.getHashcodeCommit());
+        System.out.println("Date: " + commit.getDate());
+        System.out.println(commit.getMessage());
         System.out.println();
     }
 
@@ -233,6 +260,52 @@ public class Repository implements Serializable {
         File checkoutFile = join(CWD, file);
         writeContents(checkoutFile, (Object) checkByte);
         checkoutFile.createNewFile();
+    }
+
+    //ToDo:what about master or other branch?
+    public static void rm(String file) throws IOException {
+        HEAD = readObject(HEAD_FILE, Commit.class);
+        List<String> hashList = plainFilenamesIn(STAGING_AREA);
+        //if all do not have this file
+        if (hashList != null && !hashList.contains(file) && !HEAD.getFileHashcode().containsKey(file)) {
+            System.out.println("No reason to remove the file.");
+        }
+        //remove from stage
+        if (hashList != null) {
+            if (hashList.contains(file)) {
+                File rmFile = join(STAGING_AREA, file);
+                rmFile.delete();
+            }
+        }
+        //remove from HEAD
+        HEAD.getFileHashcode().remove(file);
+        writeObject(HEAD_FILE, HEAD);
+        restrictedDelete(file);
+    }
+
+    public static void logGlobal() {
+        List<String> commitList = plainFilenamesIn(COMMIT);
+        commits = readObject(COMMITS_FILE, HashMap.class);
+        if (commitList != null) {
+            for (String s : commitList) {
+                Commit commit = commits.get(s);
+                printCommit(commit);
+            }
+        }
+    }
+
+    public static void find(String message) {
+        commits = readObject(COMMITS_FILE, HashMap.class);
+        boolean found = false;
+        for (Commit commit : commits.values()) {
+            if (commit.getMessage().equals(message)) {
+                System.out.println(commit.getHashcodeCommit());
+                found = true;
+            }
+        }
+        if (!found) {
+            System.out.println("Found no commit with that message.");
+        }
     }
 }
 
