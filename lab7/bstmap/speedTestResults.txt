@@ -1,0 +1,22 @@
+Please enter desired length of each string: 9999
+
+Enter # strings to insert into the maps: dadwadfinmohfql
+Please enter a positive integer: 999
+class bstmap.ULLMap: 0.11 sec
+class bstmap.BSTMap: 0.10 sec
+Java's Built-in TreeMap: 0.10 sec
+Java's Built-in HashMap: 0.08 sec
+
+Enter # strings to insert into the maps: kfmafelfppqixyxbaalmdekfhuads
+Please enter a positive integer: 9999
+class bstmap.ULLMap: 2.03 sec
+class bstmap.BSTMap: 0.88 sec
+Java's Built-in TreeMap: 0.91 sec
+Java's Built-in HashMap: 0.88 sec
+
+Enter # strings to insert into the maps: ihifsannmxaodjeuaglzqiyeu37468289578935
+Please enter a positive integer: 9999
+class bstmap.ULLMap: 2.19 sec
+class bstmap.BSTMap: 0.87 sec
+Java's Built-in TreeMap: 0.88 sec
+Java's Built-in HashMap: 0.92 sec

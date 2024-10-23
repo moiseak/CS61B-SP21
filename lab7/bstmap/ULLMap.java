@@ -6,12 +6,16 @@ import java.util.Set;
 /** A data structure that uses a linked list to store pairs of keys and values.
  *  Any key must appear at most once in the dictionary, but values may appear multiple
  *  times. Key operations are get(key), put(key, value), and contains(key) methods. The value
- *  associated to a key is the value in the last call to put with that key. */
+ *  associated to a key is the value in the last call to put with that key.
+ * @author CS61B
+ */
+
 public class ULLMap<K, V>  implements Map61B<K, V> {
 
     int size = 0;
 
     /** Returns the value corresponding to KEY or null if no such value exists. */
+    @Override
     public V get(K key) {
         if (list == null) {
             return null;
@@ -28,7 +32,7 @@ public class ULLMap<K, V>  implements Map61B<K, V> {
         return size;
     }
 
-    /** Removes all of the mappings from this map. */
+    /** Removes all the mappings from this map. */
     @Override
     public void clear() {
         size = 0;
@@ -37,6 +41,7 @@ public class ULLMap<K, V>  implements Map61B<K, V> {
 
     /** Inserts the key-value pair of KEY and VALUE into this dictionary,
      *  replacing the previous value associated to KEY, if any. */
+    @Override
     public void put(K key, V val) {
         if (list != null) {
             Entry lookup = list.get(key);
@@ -46,13 +51,14 @@ public class ULLMap<K, V>  implements Map61B<K, V> {
                 lookup.val = val;
             }
         } else {
-            list = new Entry(key, val, list);
+            list = new Entry(key, val, null);
             size = size + 1;
         }
     }
 
     /** Returns true if and only if this dictionary contains KEY as the
      *  key of some key-value pair. */
+    @Override
     public boolean containsKey(K key) {
         if (list == null) {
             return false;
@@ -60,6 +66,7 @@ public class ULLMap<K, V>  implements Map61B<K, V> {
         return list.get(key) != null;
     }
 
+    @SuppressWarnings("NullableProblems")
     @Override
     public Iterator<K> iterator() {
         return new ULLMapIter();

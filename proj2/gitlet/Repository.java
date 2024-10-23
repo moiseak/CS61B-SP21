@@ -223,6 +223,7 @@ public class Repository implements Serializable {
         System.out.println();
     }
 
+    //checkout HEAD file to CWD
     public static void checkout(String file) throws IOException {
         HEAD = readObject(HEAD_FILE, Commit.class);
         blobs = readObject(BLOBS_FILE, HashMap.class);
@@ -239,6 +240,7 @@ public class Repository implements Serializable {
         checkoutFile.createNewFile();
     }
 
+    //checkout commit correspond commitId 's file to CWD
     public static void checkoutCommit(String commitId, String file) throws IOException {
         commits = readObject(COMMITS_FILE, HashMap.class);
         blobs = readObject(BLOBS_FILE, HashMap.class);
@@ -283,6 +285,7 @@ public class Repository implements Serializable {
         restrictedDelete(file);
     }
 
+    //print all commit
     public static void logGlobal() {
         List<String> commitList = plainFilenamesIn(COMMIT);
         commits = readObject(COMMITS_FILE, HashMap.class);
@@ -294,6 +297,7 @@ public class Repository implements Serializable {
         }
     }
 
+    //print commitId which message is arg message
     public static void find(String message) {
         commits = readObject(COMMITS_FILE, HashMap.class);
         boolean found = false;
