@@ -3,8 +3,7 @@ package gitlet;
 import java.io.File;
 import java.io.IOException;
 import java.io.Serializable;
-import java.util.HashMap;
-import java.util.List;
+import java.util.*;
 
 import static gitlet.Utils.*;
 
@@ -37,7 +36,7 @@ public class Repository implements Serializable {
     public static final File HEAD_FILE = join(GITLET_DIR, "HEAD");
     //hashmap about commitId to commit
     public static final File COMMITS_FILE = join(GITLET_DIR, "commits");
-    //hashmap about filename to file byte array
+    //hashmap about filename to file a byte array
     public static final File BLOBS_FILE = join(GITLET_DIR, "blobs");
     //hashmap about branch name to branch
     public static final File BRANCHES_FILE = join(GITLET_DIR, "branches");
@@ -90,13 +89,13 @@ public class Repository implements Serializable {
         writeObject(BLOBS_FILE, blobs);
         //save current branch
         writeObject(BRANCH_FILE, firstCommit);
-        //save all branch
+        //save all branches
         writeObject(BRANCHES_FILE, branches);
 
     }
 
     public static void add(String file) throws IOException {
-        //find local file
+        //find a local file
         File add = join(CWD, file);
         if (!add.exists()) {
             System.out.println("File does not exist.");
@@ -137,12 +136,18 @@ public class Repository implements Serializable {
         currentBranch = readObject(BRANCH_FILE, Commit.class);
         commits = readObject(COMMITS_FILE, HashMap.class);
         branches = readObject(BRANCHES_FILE, HashMap.class);
+        String branchName = "master";
+        for (Map.Entry<String, Commit> entry : branches.entrySet()) {
+            if (entry.getValue().getHashcodeCommit().equals(currentBranch.getHashcodeCommit())) {
+                branchName = entry.getKey();
+            }
+        }
         String parentHash = HEAD.getHashcodeCommit();
         Commit commit = new Commit(message, parentHash);
         //Defaults to the same file as the parent commit
         commit.setFileHashcode(HEAD.getFileHashcode());
         //change file-hashcode
-        //get all filename in stage
+        //get all filenames in stage
         List<String> hashList = plainFilenamesIn(STAGING_AREA);
         //stage not null
         if (hashList != null) {
@@ -189,7 +194,7 @@ public class Repository implements Serializable {
         currentBranch = commit;
         //update
         commits.put(commit.getHashcodeCommit(), commit);
-        branches.put("master", currentBranch);
+        branches.put(branchName, currentBranch);
         writeObject(HEAD_FILE, HEAD);
         writeObject(BRANCH_FILE, currentBranch);
         writeObject(COMMITS_FILE, commits);
@@ -240,7 +245,7 @@ public class Repository implements Serializable {
         checkoutFile.createNewFile();
     }
 
-    //checkout commit correspond commitId 's file to CWD
+    //checkout commit corresponds commitId 's file to CWD
     public static void checkoutCommit(String commitId, String file) throws IOException {
         commits = readObject(COMMITS_FILE, HashMap.class);
         blobs = readObject(BLOBS_FILE, HashMap.class);
@@ -262,6 +267,17 @@ public class Repository implements Serializable {
         File checkoutFile = join(CWD, file);
         writeContents(checkoutFile, (Object) checkByte);
         checkoutFile.createNewFile();
+    }
+
+    public static void checkBranch(String branch) {
+        currentBranch = readObject(BRANCH_FILE, Commit.class);
+        branches = readObject(BRANCHES_FILE, HashMap.class);
+        for (String key : branches.keySet()) {
+            if (branch.equals(key)) {
+                currentBranch = branches.get(key);
+            }
+        }
+        writeObject(BRANCH_FILE, currentBranch);
     }
 
     //ToDo:what about master or other branch?
@@ -297,7 +313,7 @@ public class Repository implements Serializable {
         }
     }
 
-    //print commitId which message is arg message
+    //print commitId which message is an arg message
     public static void find(String message) {
         commits = readObject(COMMITS_FILE, HashMap.class);
         boolean found = false;
@@ -310,6 +326,101 @@ public class Repository implements Serializable {
         if (!found) {
             System.out.println("Found no commit with that message.");
         }
+    }
+
+    public static void status() {
+        branches = readObject(BRANCHES_FILE, HashMap.class);
+        currentBranch = readObject(BRANCH_FILE, Commit.class);
+        HEAD = readObject(HEAD_FILE, Commit.class);
+        System.out.println("=== Branches ===");
+        boolean found = false;
+        for (Map.Entry<String, Commit> entry: branches.entrySet()) {
+            if (entry.getValue().getHashcodeCommit().equals(currentBranch.getHashcodeCommit()) && !found) {
+                System.out.println("*" + entry.getKey());
+                found = true;
+            } else {
+                System.out.println(entry.getKey());
+            }
+        }
+        System.out.println();
+        System.out.println("=== Staged Files ===");
+        List<String> hashList = plainFilenamesIn(STAGING_AREA);
+        if (hashList != null) {
+            for (String s : hashList) {
+                System.out.println(s);
+            }
+        }
+        System.out.println();
+        System.out.println("=== Removed Files ===");
+        for (String file : currentBranch.getFileHashcode().keySet()) {
+            if (!HEAD.getFileHashcode().containsKey(file)) {
+                System.out.println(file);
+            }
+        }
+        System.out.println();
+        System.out.println("=== Modifications Not Staged For Commit ===");
+        System.out.println();
+        System.out.println("=== Untracked Files ===");
+        System.out.println();
+    }
+
+    public static void branch(String branch) {
+        HEAD = readObject(HEAD_FILE, Commit.class);
+        branches = readObject(BRANCHES_FILE, HashMap.class);
+        for (String key : branches.keySet()) {
+            if (key.equals(branch)) {
+                System.out.println("A branch with that name already exists.");
+                return;
+            }
+        }
+        branches.put(branch, HEAD);
+        writeObject(BRANCHES_FILE, branches);
+    }
+
+    public static void rmBranch(String branch) {
+        branches = readObject(BRANCHES_FILE, HashMap.class);
+        currentBranch = readObject(BRANCH_FILE, Commit.class);
+        boolean found = false;
+        for (Commit commit : branches.values()) {
+            if (commit.getHashcodeCommit().equals(currentBranch.getHashcodeCommit())) {
+                System.out.println("Cannot remove the current branch.");
+                return;
+            }
+        }
+        for (String key : branches.keySet()) {
+            if (key.equals(branch)) {
+                found = true;
+                branches.remove(branch);
+                writeObject(BRANCHES_FILE, branches);
+                break;
+            }
+        }
+        if (!found) {
+            System.out.println("A branch with that name does not exist.");
+        }
+
+    }
+
+    public static void reset(String commitId) throws IOException {
+        commits = readObject(COMMITS_FILE, HashMap.class);
+        currentBranch = readObject(BRANCH_FILE, Commit.class);
+        HEAD = readObject(HEAD_FILE, Commit.class);
+        branches = readObject(BRANCHES_FILE, HashMap.class);
+        Commit nowCommit = commits.get(commitId);
+        for (String fileName : nowCommit.getFileHashcode().keySet()) {
+            checkoutCommit(commitId, fileName);
+        }
+        List<String> file = plainFilenamesIn(STAGING_AREA);
+        if (file != null) {
+            for (String s : file) {
+                if (!nowCommit.getFileHashcode().containsKey(s)) {
+                    File f = join(STAGING_AREA, s);
+                    f.delete();
+                }
+            }
+        }
+        currentBranch = nowCommit;
+        HEAD = nowCommit;
     }
 }
 

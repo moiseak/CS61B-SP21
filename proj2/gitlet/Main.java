@@ -66,7 +66,7 @@ public class Main{
                 } else {
                     String fourthArg = args[2];
                     if (Objects.equals(fourthArg, "--")) {
-                        //args : first is checkout, second is commitId, third is --", fourth is filename
+                        //args: first is checkout, second is commitId, third is --", fourth is filename
                         //checkout [] -- []
 
                         //filename
@@ -77,10 +77,10 @@ public class Main{
                         } catch (IOException e) {
                             throw new RuntimeException(e);
                         }
+                    } else {
+                        Repository.checkBranch(secondArg2);
                     }
-//                    else {
-//                        //checkout []
-//                    }
+
                 }
                 break;
             case "rm":
@@ -98,6 +98,20 @@ public class Main{
                 String secondArg4 = args[1];
                 Repository.find(secondArg4);
                 break;
+            case "status":
+                Repository.status();
+                break;
+            case "branch":
+                String secondArg5 = args[1];
+                Repository.branch(secondArg5);
+                break;
+            case "rm-branch":
+                String secondArg6 = args[1];
+                Repository.rmBranch(secondArg6);
+                break;
+            case "reset":
+                String secondArg7 = args[1];
+                Repository.reset(secondArg7);
         }
     }
 }
