@@ -24,11 +24,18 @@ public class Commit implements Serializable {
     private final String commitDate;
     private final String hashCodeCommit;
     private final String parent;
+
+    public String getMergeMessage() {
+        return mergeMessage;
+    }
+
+    private final String mergeMessage;
     //file and file hash value
     private HashMap<String, String> fileHashcode = new HashMap<>();
 
     public Commit() {
         this.message  = "initial commit";
+        this.mergeMessage = "";
         Date d = new Date(0);
         SimpleDateFormat sdf = new SimpleDateFormat("EEE MMM dd HH:mm:ss yyyy Z", Locale.ENGLISH);
         sdf.setTimeZone(TimeZone.getTimeZone("GMT-8:00"));
@@ -40,11 +47,23 @@ public class Commit implements Serializable {
     public Commit(String message, String parent) {
         this.message = message;
         this.parent = parent;
+        this.mergeMessage = "";
         Date d = new Date();
         SimpleDateFormat sdf = new SimpleDateFormat("EEE MMM dd HH:mm:ss yyyy Z", Locale.ENGLISH);
         sdf.setTimeZone(TimeZone.getTimeZone("GMT-8:00"));
         this.commitDate = sdf.format(d);
         hashCodeCommit = Utils.sha1(this.message, this.commitDate, this.parent);
+    }
+
+    public Commit(String message, String parent, String mergeMessage) {
+        this.message = message;
+        this.parent = parent;
+        this.mergeMessage = mergeMessage;
+        Date d = new Date();
+        SimpleDateFormat sdf = new SimpleDateFormat("EEE MMM dd HH:mm:ss yyyy Z", Locale.ENGLISH);
+        sdf.setTimeZone(TimeZone.getTimeZone("GMT-8:00"));
+        this.commitDate = sdf.format(d);
+        hashCodeCommit = Utils.sha1(this.message, this.commitDate, this.parent, this.mergeMessage);
     }
 
     public HashMap<String, String> getFileHashcode() {

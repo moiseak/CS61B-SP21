@@ -25,6 +25,7 @@ public class Repository implements Serializable {
     public static final File GITLET_DIR = join(CWD, ".gitlet");
     /* The staging */
     public static final File STAGING_AREA = join(GITLET_DIR, "staging");
+    public static final File RM_AREA = join(GITLET_DIR, "rm");
     //Each constant that needs to be saved
     //all commits
     public static final File COMMIT = Utils.join(Repository.GITLET_DIR, "commit");
@@ -76,6 +77,9 @@ public class Repository implements Serializable {
         }
         if (!COMMIT.exists()) {
             COMMIT.mkdir();
+        }
+        if (!RM_AREA.exists()) {
+            RM_AREA.mkdir();
         }
         HEAD_FILE.createNewFile();
         COMMITS_FILE.createNewFile();
@@ -142,19 +146,26 @@ public class Repository implements Serializable {
     }
 
     @SuppressWarnings("unchecked")
-    public static void commit(String message) throws IOException {
+    public static void commit(String ... message) throws IOException {
         //get parent commit
         HEAD = readObject(HEAD_FILE, Commit.class);
         currentBranch = readObject(BRANCH_FILE, Branch.class);
         commits = readObject(COMMITS_FILE, HashMap.class);
         branches = readObject(BRANCHES_FILE, HashMap.class);
         String parentHash = HEAD.getHashcodeCommit();
-        Commit commit = new Commit(message, parentHash);
+        Commit commit = new Commit();
+        if (message.length == 1) {
+            commit = new Commit(message[0], parentHash);
+        }
+        if (message.length == 2) {
+            commit = new Commit(message[0], parentHash, message[1]);
+        }
         //Defaults to the same file as the parent commit
         commit.setFileHashcode(HEAD.getFileHashcode());
         //change file-hashcode
         //get all filenames in stage
         List<String> hashList = plainFilenamesIn(STAGING_AREA);
+        List<String> hashListRm = plainFilenamesIn(RM_AREA);
         //stage not null
         if (hashList != null) {
             for (String s : hashList) {
@@ -192,8 +203,15 @@ public class Repository implements Serializable {
             }
         } else {
             System.out.println("No changes added to the commit.");
-            return;
         }
+        if (hashListRm != null) {
+            for (String r : hashListRm) {
+                commit.getFileHashcode().remove(r);
+                File rmF = join(RM_AREA, r);
+                rmF.delete();
+            }
+        }
+
         //save
         commit.commit();
         HEAD = commit;
@@ -210,7 +228,6 @@ public class Repository implements Serializable {
     @SuppressWarnings("unchecked")
     public static void log() {
         HEAD = readObject(HEAD_FILE, Commit.class);
-        System.out.println(HEAD.getMessage());//
         commits = readObject(COMMITS_FILE, HashMap.class);
         while (HEAD != null) {
             printCommit();
@@ -220,20 +237,40 @@ public class Repository implements Serializable {
 
     //helper print to log
     private static void printCommit() {
-        System.out.println("===");
-        System.out.println("commit " + HEAD.getHashcodeCommit());
-        System.out.println("Date: " + HEAD.getDate());
-        System.out.println(HEAD.getMessage());
-        System.out.println();
+        if (Objects.equals(HEAD.getMergeMessage(), "")) {
+            System.out.println("===");
+            System.out.println("commit " + HEAD.getHashcodeCommit());
+            System.out.println("Date: " + HEAD.getDate());
+            System.out.println(HEAD.getMessage());
+            System.out.println();
+        } else {
+            System.out.println("===");
+            System.out.println("commit " + HEAD.getHashcodeCommit());
+            System.out.println(HEAD.getMergeMessage());
+            System.out.println("Date: " + HEAD.getDate());
+            System.out.println(HEAD.getMessage());
+            System.out.println();
+        }
+
     }
 
     //help print to log-global
     private static void printCommit(Commit commit) {
-        System.out.println("===");
-        System.out.println("commit " + commit.getHashcodeCommit());
-        System.out.println("Date: " + commit.getDate());
-        System.out.println(commit.getMessage());
-        System.out.println();
+        if ("".equals(commit.getMergeMessage())) {
+            System.out.println("===");
+            System.out.println("commit " + commit.getHashcodeCommit());
+            System.out.println("Date: " + commit.getDate());
+            System.out.println(commit.getMessage());
+            System.out.println();
+        } else {
+            System.out.println("===");
+            System.out.println("commit " + commit.getHashcodeCommit());
+            System.out.println(commit.getMergeMessage());
+            System.out.println("Date: " + commit.getDate());
+            System.out.println(commit.getMessage());
+            System.out.println();
+        }
+
     }
 
     //checkout HEAD file to CWD
@@ -274,7 +311,7 @@ public class Repository implements Serializable {
             return;
         }
         String fileHash = checkCommit.getFileHashcode().get(file);
-        //get and write
+        //get file content and write in CWD
         byte[] checkByte = blobs.get(fileHash);
         File checkoutFile = join(CWD, file);
         writeContents(checkoutFile, (Object) checkByte);
@@ -288,11 +325,21 @@ public class Repository implements Serializable {
         branches = readObject(BRANCHES_FILE, HashMap.class);
         currentBranch = branches.get(branch);
         HEAD = branches.get(branch).commit;
+        List<String> cwd = plainFilenamesIn(CWD);
+        if (cwd != null) {
+            for (String s : cwd) {
+                if (!HEAD.getFileHashcode().containsKey(s)) {
+                    restrictedDelete(s);
+                }
+            }
+        }
         for (String key : HEAD.getFileHashcode().keySet()) {
             checkout(key);
         }
+        branches.put(currentBranch.name, currentBranch);
         writeObject(HEAD_FILE, HEAD);
         writeObject(BRANCH_FILE, currentBranch);
+        writeObject(BRANCHES_FILE, branches);
     }
 
     @SuppressWarnings("unchecked")
@@ -309,6 +356,9 @@ public class Repository implements Serializable {
         if (hashList != null) {
             if (hashList.contains(file)) {
                 File file1 = join(STAGING_AREA, file);
+                File rm = join(RM_AREA, file);
+                writeContents(rm, (Object) readContents(file1));
+                rm.createNewFile();
                 file1.delete();
             }
         }
@@ -449,74 +499,144 @@ public class Repository implements Serializable {
     public static void merge(String branch) throws IOException {
         branches = readObject(BRANCHES_FILE, HashMap.class);
         currentBranch = readObject(BRANCH_FILE, Branch.class);
+        HEAD = readObject(HEAD_FILE, Commit.class);
         commits = readObject(COMMITS_FILE, HashMap.class);
         blobs = readObject(BLOBS_FILE, HashMap.class);
-        Commit splitCommit;
+        Commit splitCommit = currentBranch.commit;
         Branch giveBranch = branches.get(branch);
-        //give branch do not exist
+        //give branch must exist
         if (giveBranch == null) {
             System.out.println("A branch with that name does not exist.");
             return;
         }
         //the stage is not empty
         List<String> file = plainFilenamesIn(STAGING_AREA);
-        if (file != null) {
+        if (file != null && !file.isEmpty()) {
             System.out.println("You have uncommitted changes.");
         }
         //merge itself
         if (currentBranch.name.equals(branch)) {
             System.out.println("Cannot merge a branch with itself.");
+            return;
         }
         //CWD
         List<String> neFile = plainFilenamesIn(CWD);
         if (neFile != null) {
-            System.out.println("There is an untracked file in the way; delete it, or add and commit it first.");
-        }
-        Commit parent1 = giveBranch.commit;
-        Commit parent2 = currentBranch.commit;
-        //get splitCommit
-        while (true) {
-            if (parent1.equals(parent2)) {
-                splitCommit = parent1;
-                break;
-            } else {
-                parent1 = commits.get(giveBranch.commit.getParent());
-                parent2 = commits.get(currentBranch.commit.getParent());
-            }
-        }
-        if (splitCommit.equals(currentBranch.commit)) {
-            checkBranch(branch);
-            System.out.println("Current branch fast-forwarded.");
-            return;
-        } else if (splitCommit.equals(giveBranch.commit)) {
-            System.out.println("Given branch is an ancestor of the current branch.");
-            return;
-        }
-        for (Map.Entry<String, String> entry: giveBranch.commit.getFileHashcode().entrySet()) {
-            if (!entry.getValue().equals(splitCommit.getFileHashcode().get(entry.getKey()))) {
-                if (splitCommit.getFileHashcode().get(entry.getKey()).equals(currentBranch.commit.getFileHashcode().get(entry.getKey()))) {
-                    checkoutCommit(giveBranch.commit.getHashcodeCommit(), entry.getKey());
-                    add(entry.getKey());
-                } else {
-                    //conflicted file
-                    byte[] currFile = blobs.get(currentBranch.commit.getFileHashcode().get(entry.getKey()));
-                    byte[] giveFile = blobs.get(giveBranch.commit.getFileHashcode().get(entry.getKey()));
-                    File newFile = join(STAGING_AREA, "new");
-                    writeContents(newFile, "<<<<<<< HEAD");
-                    writeContents(newFile, (Object) currFile);
-                    writeContents(newFile, "=======");
-                    writeContents(newFile, (Object) giveFile);
-                    writeContents(newFile, ">>>>>>>");
-                    String fHash = sha1(newFile);
-                    blobs.put(fHash, readContents(newFile));
-                    currentBranch.commit.getFileHashcode().put(entry.getKey(), fHash);
-                    giveBranch.commit.getFileHashcode().put(entry.getKey(), fHash);
-                    System.out.println("Encountered a merge conflict.");
+            for (String fileName : neFile) {
+                if (giveBranch.commit.getFileHashcode().containsKey(fileName)) {
+                    System.out.println("There is an untracked file in the way; delete it, or add and commit it first.");
                     return;
                 }
             }
         }
 
+        // find splitCommit
+        List<String> id1 = new ArrayList<>();
+        List<String> id2 = new ArrayList<>();
+        Commit parent1 = giveBranch.commit;
+        Commit parent2 = currentBranch.commit;
+        while (parent1 != null) {
+            id1.add(parent1.getParent());
+            parent1 = commits.get(parent1.getParent());
+        }
+        while (parent2 != null) {
+            id2.add(parent2.getParent());
+            parent2 = commits.get(parent2.getParent());
+        }
+        for (String s : id1) {
+            if (id2.contains(s)) {
+                splitCommit = commits.get(s);
+                break;
+            }
+        }
+        if (splitCommit.getHashcodeCommit().equals(currentBranch.commit.getHashcodeCommit())) {
+            //ToDo: we have not add
+            checkBranch(branch);
+            System.out.println("Current branch fast-forwarded.");
+            return;
+        } else if (splitCommit.getHashcodeCommit().equals(giveBranch.commit.getHashcodeCommit())) {
+            System.out.println("Given branch is an ancestor of the current branch.");
+            return;
+        }
+        //file exists in split commit
+        for (Map.Entry<String, String> entry: splitCommit.getFileHashcode().entrySet()) {
+            String key = entry.getKey();
+            String value = entry.getValue();
+            String gValue = giveBranch.commit.getFileHashcode().get(key);
+            String cValue = currentBranch.commit.getFileHashcode().get(key);
+            //ToDo:two branches delete file commonly
+            //no delete
+            if (cValue != null && gValue != null) {
+                //give branch modifies, current branch does not modify
+                if (!value.equals(gValue) && value.equals(cValue)) {
+                    checkoutCommit(currentBranch.commit.getHashcodeCommit(), key);
+                    add(key);
+                    continue;
+                }
+                //curr branch modifies, give branch does not modify -- not need code
+
+                //two branches modify the file commonly -- not need code
+
+                //ToDo:two branches modify the file but not common
+                if (!value.equals(gValue) && !cValue.equals(gValue)) {
+
+                }
+
+            }
+            //ToDo:all delete
+            else if (cValue == null && gValue == null) {
+
+            }
+            //in curr does not modify, in give be deleted
+            else if (gValue == null && cValue.equals(value)) {
+                rm(key);
+            }
+            //in give does not modify, in curr be deleted -- not need code
+
+            //ToDo:one modify, one delete
+            else if (gValue != null && !gValue.equals(value) && cValue == null) {
+
+            }
+            else if (cValue != null && gValue == null && !cValue.equals(value)) {
+
+            }
+
+            //ToDO:we have not cope file not exist
+            //if give not equal split
+//            if (!value.equals()) {
+//                //and split equal current
+//                if (splitCommit.getFileHashcode().get(entry.getKey()).equals(currentBranch.commit.getFileHashcode().get(entry.getKey()))) {
+//                    checkoutCommit(giveBranch.commit.getHashcodeCommit(), entry.getKey());
+//                    add(entry.getKey());
+//                } else {
+//                    //conflicted file
+//                    byte[] currFile = blobs.get(currentBranch.commit.getFileHashcode().get(entry.getKey()));
+//                    byte[] giveFile = blobs.get(giveBranch.commit.getFileHashcode().get(entry.getKey()));
+//                    File newFile = join(STAGING_AREA, "new");
+//                    writeContents(newFile, "<<<<<<< HEAD");
+//                    writeContents(newFile, (Object) currFile);
+//                    writeContents(newFile, "=======");
+//                    writeContents(newFile, (Object) giveFile);
+//                    writeContents(newFile, ">>>>>>>");
+//
+//                    String fHash = sha1(newFile);
+//                    blobs.put(fHash, readContents(newFile));
+//                    currentBranch.commit.getFileHashcode().put(entry.getKey(), fHash);
+//                    branches.put(currentBranch.name, currentBranch);
+//                    writeObject(BRANCH_FILE, currentBranch);
+//                    writeObject(BLOBS_FILE, blobs);
+//                    writeObject(BRANCHES_FILE, branches);
+//                    giveBranch.commit.getFileHashcode().put(entry.getKey(), fHash);
+//                    System.out.println("Encountered a merge conflict.");
+//                }
+//            }
+        }
+        //ToDo:file not exist in split commit
+
+
+        String mergeMessage = "Merge: " + currentBranch.commit.getHashcodeCommit().substring(0, 7) + " " +  giveBranch.commit.getHashcodeCommit().substring(0, 7);
+        String message = "Merged " + branch + " into " + currentBranch.name + ".";
+        Repository.commit(message, mergeMessage);
     }
 }
 
