@@ -50,20 +50,23 @@ public class Main{
                 Repository.log();
                 break;
             case "checkout":
-                // maybe"--",  commitId ,  or branch
+                // maybe"--", commitId, or branch
                 String secondArg2 = args[1];
-                if (Objects.equals(secondArg2, "--")) {
-                    //first arg checkout,  second  is "--", third is file name
-                    //checkout -- []
-                    // filename
-                    String thirdArg = args[2];
-                    //arg is filename
-                    try {
-                        Repository.checkout(thirdArg);
-                    } catch (IOException e) {
-                        throw new RuntimeException(e);
+                int len = args.length;
+                if (len == 3) {
+                    if ("--".equals(secondArg2)) {
+                        //first arg checkout, second is "--", third is file name
+                        //checkout -- []
+                        // filename
+                        String thirdArg = args[2];
+                        //arg is filename
+                        try {
+                            Repository.checkout(thirdArg);
+                        } catch (IOException e) {
+                            throw new RuntimeException(e);
+                        }
                     }
-                } else {
+                } else if (len == 4){
                     String fourthArg = args[2];
                     if (Objects.equals(fourthArg, "--")) {
                         //args: first is checkout, second is commitId, third is --", fourth is filename
@@ -77,10 +80,13 @@ public class Main{
                         } catch (IOException e) {
                             throw new RuntimeException(e);
                         }
-                    } else {
-                        Repository.checkBranch(secondArg2);
                     }
-
+                } else {
+                    try {
+                        Repository.checkBranch(secondArg2);
+                    } catch (IOException e) {
+                        throw new RuntimeException(e);
+                    }
                 }
                 break;
             case "rm":
@@ -111,7 +117,18 @@ public class Main{
                 break;
             case "reset":
                 String secondArg7 = args[1];
-                Repository.reset(secondArg7);
+                try {
+                    Repository.reset(secondArg7);
+                } catch (IOException e) {
+                    throw new RuntimeException(e);
+                }
+            case "merge":
+                String secondArg8 = args[1];
+                try {
+                    Repository.merge(secondArg8);
+                } catch (IOException e) {
+                    throw new RuntimeException(e);
+                }
         }
     }
 }
