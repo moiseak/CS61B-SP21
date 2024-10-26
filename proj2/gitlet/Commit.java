@@ -75,7 +75,7 @@ public class Commit implements Serializable {
     }
 
     public void addFileHashcode(String filename, String hashcode) {
-        this.fileHashcode.put(filename,hashcode);
+        this.fileHashcode.put(filename, hashcode);
     }
 
     public String getHashcodeCommit() {

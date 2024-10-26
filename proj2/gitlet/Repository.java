@@ -41,35 +41,31 @@ public class Repository implements Serializable {
     public static final File BRANCH_FILE = join(GITLET_DIR, "branch");
 
     //Commit hash value to commit mapping
-    public static HashMap<String, Commit> commits = new HashMap<>();
+    private static HashMap<String, Commit> commits = new HashMap<>();
     //current commit
-    public static Commit HEAD;
+    private static Commit HEAD;
     //current branch
-    public static class Branch implements Serializable{
+    private static class Branch implements Serializable {
         private final String name;
         private Commit commit;
         public Branch(String name, Commit commit) {
             this.name = name;
             this.commit = commit;
         }
-
-        public Commit getCommit() {
-            return commit;
-        }
     }
-    public static Branch currentBranch;
+    private static Branch currentBranch;
     //branches
-    public static HashMap<String, Branch> branches = new HashMap<>();
+    private static HashMap<String, Branch> branches = new HashMap<>();
     //string is file hash value, byte[] is file content
-    public static HashMap<String, byte[]> blobs = new HashMap<>();
+    private static HashMap<String, byte[]> blobs = new HashMap<>();
 
 
     public static void init() throws IOException {
         if (!GITLET_DIR.exists()) {
             GITLET_DIR.mkdir();
-        }
-        else {
-            System.out.println("A Gitlet version-control system already exists in the current directory.");
+        } else {
+            System.out.println
+                    ("A Gitlet version-control system already exists in the current directory.");
             return;
         }
         if (!STAGING_AREA.exists()) {
@@ -110,39 +106,40 @@ public class Repository implements Serializable {
 
     @SuppressWarnings("unchecked")
     public static void add(String file) throws IOException {
+        blobs =  readObject(BLOBS_FILE, HashMap.class);
+        HEAD = readObject(HEAD_FILE, Commit.class);
+        //if file in rm stage, then "unremove"
+        List<String> rm = plainFilenamesIn(RM_AREA);
+        if (rm != null) {
+            for (String f : rm) {
+                if (f.equals(file)) {
+                    File beDeleted = join(RM_AREA, f);
+                    beDeleted.delete();
+                    return;
+                }
+            }
+        }
         //find a local file
         File add = join(CWD, file);
         if (!add.exists()) {
             System.out.println("File does not exist.");
             return;
         }
-        //Get file hash value
         String addHash = sha1((Object) readContents(add));
-        blobs =  readObject(BLOBS_FILE, HashMap.class);
-        //Traverse blobs without adding new blobs if the file to be submitted is the same as the file in the blobs
-        if (blobs != null){
-            for (String key : blobs.keySet()) {
-                //If the same hash value is found, it will not be added again.
-                if (addHash.equals(key)) {
-                    //Equivalent to copying a local file to the stage
-                    File addStage = join(STAGING_AREA, file);
-                    writeContents(addStage, (Object) readContents(add));
-                    addStage.createNewFile();
-                    return;
-                }
+        //file equal HEAD's file
+        if (HEAD.getFileHashcode().containsKey(file)){
+            if (HEAD.getFileHashcode().get(file).equals(addHash)) {
+                return;
             }
         }
-        //There is no identical one, so create a new blob and create a file in the temporary storage area.
-        //!!!This is the only place to change blobs!!!
-        if (blobs != null) {
-            blobs.put(addHash, readContents(add));
-        }
-        //save
-        writeObject(BLOBS_FILE, blobs);
-        //copy to stage
+        //create the file in stage area
         File addStage = join(STAGING_AREA, file);
         writeContents(addStage, (Object) readContents(add));
         addStage.createNewFile();
+        if (!blobs.containsKey(addHash)) {
+            blobs.put(addHash, readContents(add));
+        }
+        writeObject(BLOBS_FILE, blobs);
     }
 
     @SuppressWarnings("unchecked")
@@ -166,7 +163,11 @@ public class Repository implements Serializable {
         //get all filenames in stage
         List<String> hashList = plainFilenamesIn(STAGING_AREA);
         List<String> hashListRm = plainFilenamesIn(RM_AREA);
-        //stage not null
+        if (hashList != null && hashListRm != null &&
+                hashList.isEmpty() && hashListRm.isEmpty()) {
+            System.out.println("No changes added to the commit.");
+        }
+        //clear add stage
         if (hashList != null) {
             for (String s : hashList) {
                 //whether you find
@@ -180,8 +181,7 @@ public class Repository implements Serializable {
                     flag = true;
                     commit.addFileHashcode(s, fileHash);
                     file.delete();
-                }
-                else {
+                } else {
                     //key is filename
                     for (String key : commit.getFileHashcode().keySet()) {
                         //find equal filename
@@ -201,9 +201,8 @@ public class Repository implements Serializable {
                     file.delete();
                 }
             }
-        } else {
-            System.out.println("No changes added to the commit.");
         }
+        //clear rm stage
         if (hashListRm != null) {
             for (String r : hashListRm) {
                 commit.getFileHashcode().remove(r);
@@ -211,7 +210,6 @@ public class Repository implements Serializable {
                 rmF.delete();
             }
         }
-
         //save
         commit.commit();
         HEAD = commit;
@@ -276,8 +274,6 @@ public class Repository implements Serializable {
     //checkout HEAD file to CWD
     @SuppressWarnings("unchecked")
     public static void checkout(String file) throws IOException {
-        //first, save HEAD. if you cannot understand, please delete it and then test checkBranch:)
-        writeObject(HEAD_FILE, HEAD);
         HEAD = readObject(HEAD_FILE, Commit.class);
         blobs = readObject(BLOBS_FILE, HashMap.class);
         File checkoutFile = join(CWD, file);
@@ -323,53 +319,62 @@ public class Repository implements Serializable {
         HEAD = readObject(HEAD_FILE, Commit.class);
         currentBranch = readObject(BRANCH_FILE, Branch.class);
         branches = readObject(BRANCHES_FILE, HashMap.class);
-        currentBranch = branches.get(branch);
-        HEAD = branches.get(branch).commit;
+        if (!branches.containsKey(branch)) {
+            System.out.println("No such branch exists.");
+            return;
+        }
+        Branch giveBranch = branches.get(branch);
+        if (giveBranch.name.equals(currentBranch.name)) {
+            System.out.println("No need to checkout the current branch.");
+        }
         List<String> cwd = plainFilenamesIn(CWD);
         if (cwd != null) {
             for (String s : cwd) {
-                if (!HEAD.getFileHashcode().containsKey(s)) {
-                    restrictedDelete(s);
+                if (giveBranch.commit.getFileHashcode().containsKey(s)) {
+                    File checkoutFile = join(CWD, s);
+                    String fileHash = sha1((Object) readContents(checkoutFile));
+                    if (!giveBranch.commit.getFileHashcode().get(s).equals(fileHash)) {
+                        System.out.println("There is an untracked file in the way; delete it, or add and commit it first.");
+                        return;
+                    }
+                } else {
+                    rm(s);
                 }
             }
         }
-        for (String key : HEAD.getFileHashcode().keySet()) {
-            checkout(key);
+        for (String key : giveBranch.commit.getFileHashcode().keySet()) {
+            checkoutCommit(giveBranch.commit.getHashcodeCommit(), key);
         }
+        currentBranch = branches.get(branch);
+        HEAD = branches.get(branch).commit;
         branches.put(currentBranch.name, currentBranch);
         writeObject(HEAD_FILE, HEAD);
         writeObject(BRANCH_FILE, currentBranch);
         writeObject(BRANCHES_FILE, branches);
     }
 
-    @SuppressWarnings("unchecked")
     public static void rm(String file) throws IOException {
         HEAD = readObject(HEAD_FILE, Commit.class);
-        currentBranch = readObject(BRANCH_FILE, Branch.class);
-        branches = readObject(BRANCHES_FILE, HashMap.class);
         List<String> hashList = plainFilenamesIn(STAGING_AREA);
         //if all do not have this file
-        if (hashList != null && !hashList.contains(file) && !HEAD.getFileHashcode().containsKey(file)) {
+        if (hashList != null && !hashList.contains(file) &&
+                !HEAD.getFileHashcode().containsKey(file)) {
             System.out.println("No reason to remove the file.");
         }
         //remove from stage
         if (hashList != null) {
             if (hashList.contains(file)) {
                 File file1 = join(STAGING_AREA, file);
-                File rm = join(RM_AREA, file);
-                writeContents(rm, (Object) readContents(file1));
-                rm.createNewFile();
                 file1.delete();
             }
         }
         //remove from HEAD
-        HEAD.getFileHashcode().remove(file);
-        currentBranch.commit.getFileHashcode().remove(file);
-        branches.put(currentBranch.name, currentBranch);
-        writeObject(BRANCH_FILE, currentBranch);
-        writeObject(BRANCHES_FILE, branches);
-        writeObject(HEAD_FILE, HEAD);
-        restrictedDelete(file);
+        if (HEAD.getFileHashcode().containsKey(file)) {
+            File rmF = join(RM_AREA, file);
+            rmF.createNewFile();
+            //remove from CWD
+            restrictedDelete(file);
+        }
     }
 
     //print all commit
@@ -403,6 +408,9 @@ public class Repository implements Serializable {
 
     @SuppressWarnings("unchecked")
     public static void status() {
+        if (!GITLET_DIR.exists()) {
+            System.out.println("Not in an initialized Gitlet directory.");
+        }
         branches = readObject(BRANCHES_FILE, HashMap.class);
         currentBranch = readObject(BRANCH_FILE, Branch.class);
         HEAD = readObject(HEAD_FILE, Commit.class);
@@ -424,9 +432,10 @@ public class Repository implements Serializable {
         }
         System.out.println();
         System.out.println("=== Removed Files ===");
-        for (String file : currentBranch.commit.getFileHashcode().keySet()) {
-            if (!HEAD.getFileHashcode().containsKey(file)) {
-                System.out.println(file);
+        List<String> hashListR = plainFilenamesIn(RM_AREA);
+        if (hashListR != null) {
+            for (String s : hashListR) {
+                System.out.println(s);
             }
         }
         System.out.println();
@@ -502,7 +511,7 @@ public class Repository implements Serializable {
         HEAD = readObject(HEAD_FILE, Commit.class);
         commits = readObject(COMMITS_FILE, HashMap.class);
         blobs = readObject(BLOBS_FILE, HashMap.class);
-        Commit splitCommit = currentBranch.commit;
+        Commit splitCommit;
         Branch giveBranch = branches.get(branch);
         //give branch must exist
         if (giveBranch == null) {
@@ -524,31 +533,16 @@ public class Repository implements Serializable {
         if (neFile != null) {
             for (String fileName : neFile) {
                 if (giveBranch.commit.getFileHashcode().containsKey(fileName)) {
-                    System.out.println("There is an untracked file in the way; delete it, or add and commit it first.");
+                    System.out.println(
+                        "There is an untracked file in the way; delete it, or add and commit it first.");
                     return;
                 }
             }
         }
 
         // find splitCommit
-        List<String> id1 = new ArrayList<>();
-        List<String> id2 = new ArrayList<>();
-        Commit parent1 = giveBranch.commit;
-        Commit parent2 = currentBranch.commit;
-        while (parent1 != null) {
-            id1.add(parent1.getParent());
-            parent1 = commits.get(parent1.getParent());
-        }
-        while (parent2 != null) {
-            id2.add(parent2.getParent());
-            parent2 = commits.get(parent2.getParent());
-        }
-        for (String s : id1) {
-            if (id2.contains(s)) {
-                splitCommit = commits.get(s);
-                break;
-            }
-        }
+        splitCommit = findSplit(giveBranch);
+
         if (splitCommit.getHashcodeCommit().equals(currentBranch.commit.getHashcodeCommit())) {
             checkBranch(branch);
             System.out.println("Current branch fast-forwarded.");
@@ -583,7 +577,7 @@ public class Repository implements Serializable {
 
                 //two branches modify the file commonly -- not need code
 
-                //ToDo:two branches modify the file but not common -- conflicted
+                //two branches modify the file but not common -- conflicted
                 if (!value.equals(gValue) && !cValue.equals(gValue)) {
                     conflict(key, cValue, gValue);
                 }
@@ -592,45 +586,17 @@ public class Repository implements Serializable {
             else if (cValue != null && gValue == null && cValue.equals(value)) {
                 rm(key);
             }
-            //in give does not modify, in curr be deleted -- not need code
+            //in give does not modify, in curr be deleted
+            else if (value.equals(gValue) && cValue == null) {
 
-            //ToDo:one modify, one delete -- conflicted
+            }
+
             else if (gValue != null && !gValue.equals(value) && cValue == null) {
                 conflict(key, cValue, gValue);
             }
             else if (cValue != null && gValue == null && !cValue.equals(value)) {
                 conflict(key, cValue, gValue);
             }
-
-            //ToDO:we have not cope file not exist
-            //if give not equal split
-//            if (!value.equals()) {
-//                //and split equal current
-//                if (splitCommit.getFileHashcode().get(entry.getKey()).equals(currentBranch.commit.getFileHashcode().get(entry.getKey()))) {
-//                    checkoutCommit(giveBranch.commit.getHashcodeCommit(), entry.getKey());
-//                    add(entry.getKey());
-//                } else {
-//                    //conflicted file
-//                    byte[] currFile = blobs.get(currentBranch.commit.getFileHashcode().get(entry.getKey()));
-//                    byte[] giveFile = blobs.get(giveBranch.commit.getFileHashcode().get(entry.getKey()));
-//                    File newFile = join(STAGING_AREA, "new");
-//                    writeContents(newFile, "<<<<<<< HEAD");
-//                    writeContents(newFile, (Object) currFile);
-//                    writeContents(newFile, "=======");
-//                    writeContents(newFile, (Object) giveFile);
-//                    writeContents(newFile, ">>>>>>>");
-//
-//                    String fHash = sha1(newFile);
-//                    blobs.put(fHash, readContents(newFile));
-//                    currentBranch.commit.getFileHashcode().put(entry.getKey(), fHash);
-//                    branches.put(currentBranch.name, currentBranch);
-//                    writeObject(BRANCH_FILE, currentBranch);
-//                    writeObject(BLOBS_FILE, blobs);
-//                    writeObject(BRANCHES_FILE, branches);
-//                    giveBranch.commit.getFileHashcode().put(entry.getKey(), fHash);
-//                    System.out.println("Encountered a merge conflict.");
-//                }
-//            }
         }
         //file doesn't exist in split commit
         //exist current
@@ -639,7 +605,7 @@ public class Repository implements Serializable {
             if (!giveBranch.commit.getFileHashcode().containsKey(s)) {
                 continue;
             }
-            //ToDo:in give existing but not common to current -- conflicted
+            //in give existing but not common to current -- conflicted
             String gValue = giveBranch.commit.getFileHashcode().get(s);
             String cValue = currentBranch.commit.getFileHashcode().get(s);
             if (!gValue.equals(cValue)) {
@@ -648,7 +614,7 @@ public class Repository implements Serializable {
         }
         //only exist give
         for (String s : giveBranch.commit.getFileHashcode().keySet()) {
-            if (!currentBranch.commit.getFileHashcode().containsKey(s)) {
+            if (!currentBranch.commit.getFileHashcode().containsKey(s) && !splitCommit.getFileHashcode().containsKey(s)) {
                 checkoutCommit(giveBranch.commit.getHashcodeCommit(), s);
                 add(s);
             }
@@ -663,11 +629,14 @@ public class Repository implements Serializable {
             }
         }
 
-        String mergeMessage = "Merge: " + currentBranch.commit.getHashcodeCommit().substring(0, 7) + " " +  giveBranch.commit.getHashcodeCommit().substring(0, 7);
-        String message = "Merged " + branch + " into " + currentBranch.name + ".";
+        String mergeMessage = "Merge: " +
+                currentBranch.commit.getHashcodeCommit().substring(0, 7) +
+                " " +
+                giveBranch.commit.getHashcodeCommit().substring(0, 7);
+        String message = "Merged " + branch
+                + " into " + currentBranch.name + ".";
         Repository.commit(message, mergeMessage);
         writeObject(BRANCH_FILE, currentBranch);
-
         writeObject(BRANCHES_FILE, branches);
     }
 
@@ -675,12 +644,35 @@ public class Repository implements Serializable {
         byte[] currFile = blobs.get(curr);
         byte[] giveFile = blobs.get(give);
         File newFile = join(STAGING_AREA, name);
-        writeContents(newFile, "<<<<<<< HEAD", (Object) currFile, "=======", (Object) giveFile, ">>>>>>>");
+        writeContents(newFile, "<<<<<<< HEAD",
+                (Object) currFile, "=======",
+                (Object) giveFile, ">>>>>>>");
         String fHash = sha1(newFile);
         blobs.put(fHash, readContents(newFile));
         writeObject(BLOBS_FILE, blobs);
 
         System.out.println("Encountered a merge conflict.");
+    }
+
+    private static Commit findSplit(Branch giveBranch) {
+        List<String> id1 = new ArrayList<>();
+        List<String> id2 = new ArrayList<>();
+        Commit parent1 = giveBranch.commit;
+        Commit parent2 = currentBranch.commit;
+        while (parent1 != null) {
+            id1.add(parent1.getParent());
+            parent1 = commits.get(parent1.getParent());
+        }
+        while (parent2 != null) {
+            id2.add(parent2.getParent());
+            parent2 = commits.get(parent2.getParent());
+        }
+        for (String s : id1) {
+            if (id2.contains(s)) {
+                return commits.get(s);
+            }
+        }
+        return null;
     }
 }
 

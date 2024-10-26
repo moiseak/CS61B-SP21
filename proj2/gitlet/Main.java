@@ -38,6 +38,7 @@ public class Main{
                 //args : commit message
                 if (args.length == 1) {
                     System.out.println("Please enter a commit message.");
+                    System.exit(0);
                 }
                 String secondArg1 = args[1];
                 try {
@@ -80,6 +81,9 @@ public class Main{
                         } catch (IOException e) {
                             throw new RuntimeException(e);
                         }
+                    } else {
+                        System.out.println("Incorrect operands.");
+                        System.exit(0);
                     }
                 } else {
                     try {
@@ -122,6 +126,7 @@ public class Main{
                 } catch (IOException e) {
                     throw new RuntimeException(e);
                 }
+                break;
             case "merge":
                 String secondArg8 = args[1];
                 try {
@@ -129,6 +134,7 @@ public class Main{
                 } catch (IOException e) {
                     throw new RuntimeException(e);
                 }
+                break;
         }
     }
 }
