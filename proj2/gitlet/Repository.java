@@ -550,7 +550,6 @@ public class Repository implements Serializable {
             }
         }
         if (splitCommit.getHashcodeCommit().equals(currentBranch.commit.getHashcodeCommit())) {
-            //ToDo: we have not add
             checkBranch(branch);
             System.out.println("Current branch fast-forwarded.");
             return;
@@ -558,13 +557,20 @@ public class Repository implements Serializable {
             System.out.println("Given branch is an ancestor of the current branch.");
             return;
         }
+        String beDelete = null;
         //file exists in split commit
         for (Map.Entry<String, String> entry: splitCommit.getFileHashcode().entrySet()) {
             String key = entry.getKey();
             String value = entry.getValue();
             String gValue = giveBranch.commit.getFileHashcode().get(key);
             String cValue = currentBranch.commit.getFileHashcode().get(key);
-            //ToDo:two branches delete file commonly
+            //two branches delete file commonly
+            if (gValue == null && cValue == null) {
+                File f = join(CWD, key);
+                if (f.exists()) {
+                    beDelete = key;
+                }
+            }
             //no delete
             if (cValue != null && gValue != null) {
                 //give branch modifies, current branch does not modify
@@ -577,28 +583,23 @@ public class Repository implements Serializable {
 
                 //two branches modify the file commonly -- not need code
 
-                //ToDo:two branches modify the file but not common
+                //ToDo:two branches modify the file but not common -- conflicted
                 if (!value.equals(gValue) && !cValue.equals(gValue)) {
-
+                    conflict(key, cValue, gValue);
                 }
-
-            }
-            //ToDo:all delete
-            else if (cValue == null && gValue == null) {
-
             }
             //in curr does not modify, in give be deleted
-            else if (gValue == null && cValue.equals(value)) {
+            else if (cValue != null && gValue == null && cValue.equals(value)) {
                 rm(key);
             }
             //in give does not modify, in curr be deleted -- not need code
 
-            //ToDo:one modify, one delete
+            //ToDo:one modify, one delete -- conflicted
             else if (gValue != null && !gValue.equals(value) && cValue == null) {
-
+                conflict(key, cValue, gValue);
             }
             else if (cValue != null && gValue == null && !cValue.equals(value)) {
-
+                conflict(key, cValue, gValue);
             }
 
             //ToDO:we have not cope file not exist
@@ -631,12 +632,55 @@ public class Repository implements Serializable {
 //                }
 //            }
         }
-        //ToDo:file not exist in split commit
+        //file doesn't exist in split commit
+        //exist current
+        for (String s : currentBranch.commit.getFileHashcode().keySet()) {
+            //give doesn't exist
+            if (!giveBranch.commit.getFileHashcode().containsKey(s)) {
+                continue;
+            }
+            //ToDo:in give existing but not common to current -- conflicted
+            String gValue = giveBranch.commit.getFileHashcode().get(s);
+            String cValue = currentBranch.commit.getFileHashcode().get(s);
+            if (!gValue.equals(cValue)) {
+                conflict(s, cValue, gValue);
+            }
+        }
+        //only exist give
+        for (String s : giveBranch.commit.getFileHashcode().keySet()) {
+            if (!currentBranch.commit.getFileHashcode().containsKey(s)) {
+                checkoutCommit(giveBranch.commit.getHashcodeCommit(), s);
+                add(s);
+            }
+        }
 
+        List<String> cwd = plainFilenamesIn(CWD);
+        if (cwd != null) {
+            for (String s : cwd) {
+                if (!s.equals(beDelete)) {
+                    add(s);
+                }
+            }
+        }
 
         String mergeMessage = "Merge: " + currentBranch.commit.getHashcodeCommit().substring(0, 7) + " " +  giveBranch.commit.getHashcodeCommit().substring(0, 7);
         String message = "Merged " + branch + " into " + currentBranch.name + ".";
         Repository.commit(message, mergeMessage);
+        writeObject(BRANCH_FILE, currentBranch);
+
+        writeObject(BRANCHES_FILE, branches);
+    }
+
+    public static void conflict(String name, String curr, String give) {
+        byte[] currFile = blobs.get(curr);
+        byte[] giveFile = blobs.get(give);
+        File newFile = join(STAGING_AREA, name);
+        writeContents(newFile, "<<<<<<< HEAD", (Object) currFile, "=======", (Object) giveFile, ">>>>>>>");
+        String fHash = sha1(newFile);
+        blobs.put(fHash, readContents(newFile));
+        writeObject(BLOBS_FILE, blobs);
+
+        System.out.println("Encountered a merge conflict.");
     }
 }
 
