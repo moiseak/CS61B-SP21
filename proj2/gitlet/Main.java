@@ -41,6 +41,10 @@ public class Main{
                     System.exit(0);
                 }
                 String secondArg1 = args[1];
+                if ("".equals(secondArg1)) {
+                    System.out.println("Please enter a commit message.");
+                    System.exit(0);
+                }
                 try {
                     Repository.commit(secondArg1);
                 } catch (IOException e) {

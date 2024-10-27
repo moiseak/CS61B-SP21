@@ -67,7 +67,8 @@ public class Repository implements Serializable {
         if (!GITLET_DIR.exists()) {
             GITLET_DIR.mkdir();
         } else {
-            System.out.println("A Gitlet version-control system already exists in the current directory.");
+            System.out.println("A Gitlet version-control system " +
+                    "already exists in the current directory.");
             return;
         }
         if (!STAGING_AREA.exists()) {
@@ -161,7 +162,6 @@ public class Repository implements Serializable {
         }
         //Defaults to the same file as the parent commit
         commit.setFileHashcode(HEAD.getFileHashcode());
-        //change file-hashcode
         //get all filenames in stage
         List<String> hashList = plainFilenamesIn(STAGING_AREA);
         List<String> hashListRm = plainFilenamesIn(RM_AREA);
@@ -176,9 +176,7 @@ public class Repository implements Serializable {
             for (String s : hashList) {
                 //whether you find
                 boolean flag = false;
-                //Get the files in the stage based on the file name
                 File file = join(STAGING_AREA, s);
-                //Get the hash of the corresponding file
                 String fileHash = sha1((Object) readContents(file));
                 //Determine whether the file hash corresponding
                 if (commit.getFileHashcode().isEmpty()) {
@@ -328,7 +326,8 @@ public class Repository implements Serializable {
         if (!fileHash.equals(cwdHash)
                 && !isTracked(file, cwdHash)
                 && cwdHash != null) {
-            System.out.println("There is an untracked file in the way; delete it, or add and commit it first.");
+            System.out.println("There is an untracked file in the way;" +
+                    " delete it, or add and commit it first.");
             return;
         }
         //get file content and write in CWD
@@ -362,25 +361,6 @@ public class Repository implements Serializable {
                 }
             }
         }
-//        if (cwd != null) {
-//            for (String s : cwd) {
-//                File checkoutFile = join(CWD, s);
-//                String fileHash = sha1((Object) readContents(checkoutFile));
-//                if (giveBranch.commit.getFileHashcode().containsKey(s)) {
-//                    if (!giveBranch.commit.getFileHashcode().get(s).equals(fileHash)
-//                            && currentBranch.commit.getFileHashcode().containsKey(fileHash)
-//                            && !currentBranch.commit.getFileHashcode().get(s).equals(fileHash)) {
-//                        System.out.println
-//                                ("There is an untracked file in the way; delete it, or add and commit it first.");
-//                        return;
-//                    }
-//                } else if (!giveBranch.commit.getFileHashcode().containsKey(s)
-//                                && currentBranch.commit.getFileHashcode().containsKey(s)
-//                                && currentBranch.commit.getFileHashcode().get(s).equals(fileHash)){
-//                    rm(s);
-//                }
-//            }
-//        }
         for (String key : giveBranch.commit.getFileHashcode().keySet()) {
             checkoutCommit(giveBranch.commit.getHashcodeCommit(), key);
         }
@@ -453,9 +433,12 @@ public class Repository implements Serializable {
         HEAD = readObject(HEAD_FILE, Commit.class);
         System.out.println("=== Branches ===");
         for (String name : branches.keySet()) {
-            if (Objects.equals(name, currentBranch.name)) {
-                System.out.println("*" + name);
-            } else {
+            if (name.equals(currentBranch.name)) {
+                System.out.println("*"  + name);
+            }
+        }
+        for (String name : branches.keySet()) {
+            if (!name.equals(currentBranch.name)) {
                 System.out.println(name);
             }
         }
@@ -564,17 +547,6 @@ public class Repository implements Serializable {
             System.out.println("Cannot merge a branch with itself.");
             return;
         }
-        //CWD
-        List<String> neFile = plainFilenamesIn(CWD);
-        if (neFile != null) {
-            for (String fileName : neFile) {
-                if (giveBranch.commit.getFileHashcode().containsKey(fileName)) {
-                    System.out.println(
-                        "There is an untracked file in the way; delete it, or add and commit it first.");
-                    return;
-                }
-            }
-        }
 
         // find splitCommit
         splitCommit = findSplit(giveBranch);
@@ -582,11 +554,13 @@ public class Repository implements Serializable {
             System.out.println("No splitCommit exists.");
             return;
         }
-        if (splitCommit.getHashcodeCommit().equals(currentBranch.commit.getHashcodeCommit())) {
+        if (splitCommit.getHashcodeCommit().equals
+                (currentBranch.commit.getHashcodeCommit())) {
             checkBranch(branch);
             System.out.println("Current branch fast-forwarded.");
             return;
-        } else if (splitCommit.getHashcodeCommit().equals(giveBranch.commit.getHashcodeCommit())) {
+        } else if (splitCommit.getHashcodeCommit().equals
+                (giveBranch.commit.getHashcodeCommit())) {
             System.out.println("Given branch is an ancestor of the current branch.");
             return;
         }
@@ -616,29 +590,32 @@ public class Repository implements Serializable {
                 //two branches modify the file commonly -- not need code
                 //two branches modify the file but not common -- conflicted
                 if (!value.equals(gValue) && !cValue.equals(gValue)) {
+                    //System.out.println("593");//
                     conflict(key, cValue, gValue);
                 }
             } else if (cValue != null && gValue == null && cValue.equals(value)) {
                 rm(key);
-            } else if (value.equals(gValue) && cValue == null) {
-                continue;
             } else if (gValue != null && !gValue.equals(value) && cValue == null) {
-                conflict(key, cValue, gValue);
+                //System.out.println("598");//
+                conflict(key, "", gValue);
             } else if (cValue != null && gValue == null && !cValue.equals(value)) {
-                conflict(key, cValue, gValue);
+                conflict(key, cValue, "");
+                //System.out.println("602");//
             }
         }
         //file doesn't exist in split commit
         //exist current
         for (String s : currentBranch.commit.getFileHashcode().keySet()) {
             //give doesn't exist
-            if (!giveBranch.commit.getFileHashcode().containsKey(s)) {
+            if (!giveBranch.commit.getFileHashcode().containsKey(s)
+                    || splitCommit.getFileHashcode().containsKey(s)) {
                 continue;
             }
             //in give existing but not common to current -- conflicted
             String gValue = giveBranch.commit.getFileHashcode().get(s);
             String cValue = currentBranch.commit.getFileHashcode().get(s);
             if (!gValue.equals(cValue)) {
+                //System.out.println("616");//
                 conflict(s, cValue, gValue);
             }
         }
@@ -673,17 +650,26 @@ public class Repository implements Serializable {
         writeObject(BRANCHES_FILE, branches);
     }
 
-    public static void conflict(String name, String curr, String give) {
-        byte[] currFile = blobs.get(curr);
-        byte[] giveFile = blobs.get(give);
-        File newFile = join(STAGING_AREA, name);
-        writeContents(newFile, "<<<<<<< HEAD",
-                (Object) currFile, "=======",
-                (Object) giveFile, ">>>>>>>");
-        String fHash = sha1(newFile);
+    public static void conflict(String name, String curr, String give) throws IOException {
+        byte[] currFile = new byte [0];
+        byte[] giveFile = new byte [0];
+
+        if ("".equals(curr)) {
+            giveFile = blobs.get(give);
+        } else if ("".equals(give)) {
+            currFile = blobs.get(curr);
+        } else {
+            currFile = blobs.get(curr);
+            giveFile = blobs.get(give);
+        }
+
+        File newFile = join(CWD, name);
+        writeContents(newFile, "<<<<<<< HEAD\n",
+                (Object) currFile, "=======\n",
+                (Object) giveFile, ">>>>>>>\n");
+        String fHash = sha1((Object) readContents(newFile));
         blobs.put(fHash, readContents(newFile));
         writeObject(BLOBS_FILE, blobs);
-
         System.out.println("Encountered a merge conflict.");
     }
 
