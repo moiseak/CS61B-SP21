@@ -6,7 +6,6 @@ import java.io.IOException;
 import java.io.Serializable;
 import java.text.SimpleDateFormat;
 import java.util.*;
-
 /** Represents a gitlet commit object.
  *  Does at a high level.
  *
@@ -64,6 +63,10 @@ public class Commit implements Serializable {
         sdf.setTimeZone(TimeZone.getTimeZone("GMT-8:00"));
         this.commitDate = sdf.format(d);
         hashCodeCommit = Utils.sha1(this.message, this.commitDate, this.parent, this.mergeMessage);
+    }
+
+    public boolean isTracked(String fileName, String fileHash) {
+        return fileHashcode.containsKey(fileName) && fileHashcode.get(fileName).equals(fileHash);
     }
 
     public HashMap<String, String> getFileHashcode() {

@@ -109,6 +109,10 @@ public class Main{
                 Repository.find(secondArg4);
                 break;
             case "status":
+                if (!Repository.GITLET_DIR.exists()) {
+                    System.out.println("Not in an initialized Gitlet directory.");
+                    System.exit(0);
+                }
                 Repository.status();
                 break;
             case "branch":
@@ -135,6 +139,9 @@ public class Main{
                     throw new RuntimeException(e);
                 }
                 break;
+            default:
+                System.out.println("No command with that name exists.");
+                System.exit(0);
         }
     }
 }
