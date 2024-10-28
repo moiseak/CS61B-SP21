@@ -23,9 +23,14 @@ public class Commit implements Serializable {
     private final String commitDate;
     private final String hashCodeCommit;
     private final String parent;
+    private String parent2 = null;
 
     public String getMergeMessage() {
         return mergeMessage;
+    }
+
+    public String getParent2() {
+        return parent2;
     }
 
     private final String mergeMessage;
@@ -54,10 +59,11 @@ public class Commit implements Serializable {
         hashCodeCommit = Utils.sha1(this.message, this.commitDate, this.parent);
     }
 
-    public Commit(String message, String parent, String mergeMessage) {
+    public Commit(String message, String parent, String mergeMessage, String parent2) {
         this.message = message;
         this.parent = parent;
         this.mergeMessage = mergeMessage;
+        this.parent2 = parent2;
         Date d = new Date();
         SimpleDateFormat sdf = new SimpleDateFormat("EEE MMM dd HH:mm:ss yyyy Z", Locale.ENGLISH);
         sdf.setTimeZone(TimeZone.getTimeZone("GMT-8:00"));

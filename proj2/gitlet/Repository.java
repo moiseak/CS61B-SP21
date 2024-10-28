@@ -165,8 +165,8 @@ public class Repository implements Serializable {
         if (message.length == 1) {
             commit = new Commit(message[0], parentHash);
         }
-        if (message.length == 2) {
-            commit = new Commit(message[0], parentHash, message[1]);
+        if (message.length == 3) {
+            commit = new Commit(message[0], parentHash, message[1], message[2]);
         }
         //Defaults to the same file as the parent commit
         commit.setFileHashcode(HEAD.getFileHashcode());
@@ -562,11 +562,10 @@ public class Repository implements Serializable {
                     beDelete = key;
                 }
             }
-            //no delete
             if (cValue != null && gValue != null) {
                 //give branch modifies, current branch does not modify
                 if (!value.equals(gValue) && value.equals(cValue)) {
-                    checkoutCommit(currentBranch.commit.getHashcodeCommit(), key);
+                    checkoutCommit(giveBranch.commit.getHashcodeCommit(), key);
                     add(key);
                 }
             }
@@ -585,14 +584,16 @@ public class Repository implements Serializable {
             String value = entry.getValue();
             String gValue = giveBranch.commit.getFileHashcode().get(key);
             String cValue = currentBranch.commit.getFileHashcode().get(key);
-            if (cValue != null && cValue.equals(value)) {
+            if (cValue != null && cValue.equals(value) && gValue == null) {
                 rm(key);
             }
-            if (gValue != null && cValue != null && !value.equals(gValue) && !cValue.equals(gValue)) {
+            if (gValue != null && cValue != null && !value.equals(gValue)
+                    && !cValue.equals(gValue)
+                    && !value.equals(cValue)) {
                 conflict(key, cValue, gValue);
-            } else if (gValue != null && !gValue.equals(value)) {
+            } else if (gValue != null && !gValue.equals(value) && cValue == null) {
                 conflict(key, "", gValue);
-            } else if (cValue != null) {
+            } else if (cValue != null && !cValue.equals(value) && gValue == null) {
                 conflict(key, cValue, "");
             }
         }
@@ -608,18 +609,19 @@ public class Repository implements Serializable {
                 conflict(s, cValue, gValue);
             }
         }
-        addfromCWD(beDelete);
+        String parent2 = giveBranch.commit.getHashcodeCommit();
+        addFromCWD(beDelete);
         String mergeMessage = "Merge: "
                 + currentBranch.commit.getHashcodeCommit().substring(0, 7)
                 + " " + giveBranch.commit.getHashcodeCommit().substring(0, 7);
         String message = "Merged " + branch
                 + " into " + currentBranch.name + ".";
-        Repository.commit(message, mergeMessage);
+        Repository.commit(message, mergeMessage, parent2);
         writeObject(BRANCH_FILE, currentBranch);
         writeObject(BRANCHES_FILE, branches);
     }
 
-    private static void addfromCWD(String beDelete) throws IOException {
+    private static void addFromCWD(String beDelete) throws IOException {
         List<String> cwd = plainFilenamesIn(CWD);
         if (cwd != null) {
             for (String s : cwd) {
@@ -630,7 +632,7 @@ public class Repository implements Serializable {
         }
     }
 
-    public static void conflict(String name, String curr, String give){
+    public static void conflict(String name, String curr, String give) {
         byte[] currFile = new byte [0];
         byte[] giveFile = new byte [0];
 
@@ -660,12 +662,16 @@ public class Repository implements Serializable {
         Commit parent1 = giveBranch.commit;
         Commit parent2 = currentBranch.commit;
         while (parent1 != null) {
-            id1.add(parent1.getParent());
+            id1.add(parent1.getHashcodeCommit());
             parent1 = commits.get(parent1.getParent());
         }
         while (parent2 != null) {
-            id2.add(parent2.getParent());
-            parent2 = commits.get(parent2.getParent());
+            id2.add(parent2.getHashcodeCommit());
+            if (parent2.getParent2() != null) {
+                parent2 = commits.get(parent2.getParent2());
+            } else {
+                parent2 = commits.get(parent2.getParent());
+            }
         }
         for (String s : id1) {
             if (id2.contains(s)) {
