@@ -151,7 +151,7 @@ public class MyHashMap<K, V> implements Map61B<K, V> {
         return size;
     }
 
-    public void put(Collection[] buckets, K key, V value) {
+    private void put(Collection[] buckets, K key, V value) {
         Node newNode = createNode(key, value);
         int index = Math.floorMod(key.hashCode(), buckets.length);
         if (buckets[index] == null) {
