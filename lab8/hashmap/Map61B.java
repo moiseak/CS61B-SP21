@@ -5,9 +5,10 @@ import java.util.Set;
  * Your implementation hashmap.MyHashMap should implement this interface. To do so,
  * append "implements hashmap.Map61B<K, V>" to the end of your "public class..."
  * declaration, though you can use other formal type parameters if you'd like.
+ * @author CS61B
  */
 public interface Map61B<K, V> extends Iterable<K> {
-    /** Removes all of the mappings from this map. */
+    /** Removes all the mappings from this map. */
     void clear();
 
     /** Returns true if this map contains a mapping for the specified key. */
