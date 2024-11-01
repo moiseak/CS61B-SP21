@@ -4,7 +4,7 @@ import java.io.IOException;
 import java.util.Objects;
 
 /** Driver class for Gitlet, a subset of the Git version-control system.
- *  @author TODO
+ *  @author Moiads
  */
 public class Main{
 
